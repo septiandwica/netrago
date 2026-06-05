@@ -175,24 +175,40 @@ function local_netrago_extend_navigation(global_navigation $nav) {
     }
 
     // Do not proctor users who can manage activities (Teachers/Admins).
-    // This allows them to test the plugin by using the "Switch role to... Student" feature.
-    // Instead of proctoring them, we show a "View NetraGo Report" button.
     if (has_capability('moodle/course:manageactivities', $context)) {
-        $reporturl = new moodle_url('/local/netrago/report.php', ['cmid' => $cmid]);
-        $btncss = "<style>.netrago-teacher-btn { display:block; margin: 15px 0; padding: 10px; background:#007bff; color:#fff; text-align:center; border-radius:5px; font-weight:bold; text-decoration:none; }</style>";
-        $js = "
-            document.addEventListener('DOMContentLoaded', function() {
-                var btn = document.createElement('a');
-                btn.href = '{$reporturl}';
-                btn.className = 'netrago-teacher-btn';
-                btn.innerHTML = '<i class=\"fa fa-shield\"></i> View NetraGo Proctoring Report for this Activity';
-                var region = document.querySelector('[role=\"main\"]') || document.querySelector('#region-main');
-                if (region) {
-                    region.appendChild(btn);
-                }
-            });
-        ";
-        $CFG->additionalhtmlhead .= $btncss . "<script>{$js}</script>";
+        if (strpos($urlpath, '/mod/') !== false && strpos($urlpath, 'report.php') !== false) {
+            // Inject Badges to Grading Table
+            $violators = $DB->get_records_sql("SELECT userid, COUNT(id) as vcount FROM {local_netrago_logs} WHERE cmid = ? GROUP BY userid", [$cmid]);
+            $violator_data = [];
+            foreach ($violators as $v) {
+                $violator_data[$v->userid] = $v->vcount;
+            }
+            
+            $rep_url = (new moodle_url('/local/netrago/report.php', ['cmid' => $cmid]))->out(false);
+            $js = "
+                document.addEventListener('DOMContentLoaded', function() {
+                    var violators = " . json_encode($violator_data) . ";
+                    var links = document.querySelectorAll('table.generaltable a[href*=\"user/view.php\"]');
+                    links.forEach(function(link) {
+                        var url = new URL(link.href, window.location.origin);
+                        var uid = url.searchParams.get('id');
+                        if (uid && violators[uid]) {
+                            var badge = document.createElement('span');
+                            badge.className = 'badge badge-danger ml-2';
+                            badge.style.cssText = 'background-color:#dc3545;color:white;padding:3px 6px;border-radius:4px;font-size:0.85em;';
+                            badge.innerHTML = '⚠️ ' + violators[uid] + ' Violations';
+                            var repLink = document.createElement('a');
+                            repLink.href = '{$rep_url}&userid=' + uid;
+                            repLink.title = 'View Proctoring Report';
+                            repLink.target = '_blank';
+                            repLink.appendChild(badge);
+                            link.parentNode.appendChild(repLink);
+                        }
+                    });
+                });
+            ";
+            $CFG->additionalhtmlhead .= "<script>{$js}</script>";
+        }
         return;
     }
 
@@ -242,4 +258,33 @@ function local_netrago_extend_navigation(global_navigation $nav) {
 
     $PAGE->requires->js(new moodle_url('/local/netrago/amd/src/face-api.min.js'));
     $PAGE->requires->js_call_amd('local_netrago/proctoring', 'init', [$config]);
+}
+
+/**
+ * Injects NetraGo Report link into the module's secondary navigation (Results tab).
+ */
+function local_netrago_extend_settings_navigation(settings_navigation $settingsnav, context $context) {
+    global $DB;
+    if ($context->contextlevel == CONTEXT_MODULE) {
+        $cm = get_coursemodule_from_id('', $context->instanceid, 0, false, MUST_EXIST);
+        if (has_capability('moodle/course:manageactivities', $context)) {
+            // Check if NetraGo is enabled
+            $settings = $DB->get_record('local_netrago', ['cmid' => $cm->id]);
+            if ($settings && ($settings->requirecamera || $settings->requirefullscreen || $settings->disablecopypaste || $settings->disablefocusloss || $settings->disabledevtools)) {
+                $reporturl = new moodle_url('/local/netrago/report.php', ['cmid' => $cm->id]);
+                
+                // Try to add to the "Results" report node for Quiz
+                $reportnode = $settingsnav->find('mod_quiz_report', navigation_node::TYPE_SETTING);
+                if ($reportnode) {
+                    $reportnode->add('NetraGo Proctoring', $reporturl, navigation_node::TYPE_SETTING, null, 'netrago_report', new pix_icon('i/report', ''));
+                } else {
+                    // Fallback to module settings node
+                    $modulenode = $settingsnav->get('modulesettings');
+                    if ($modulenode) {
+                        $modulenode->add('NetraGo Proctoring', $reporturl, navigation_node::TYPE_SETTING, null, 'netrago_report', new pix_icon('i/report', ''));
+                    }
+                }
+            }
+        }
+    }
 }
