@@ -18,21 +18,30 @@ defined('MOODLE_INTERNAL') || die();
 function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
     global $DB;
 
-    // We only want to add these settings to activities that actually involve students taking an action.
-    // However, as a universal plugin, we'll add it to all and let teachers decide.
+    // Check if plugin is globally enabled
+    if (!get_config('local_netrago', 'enable_plugin')) {
+        return;
+    }
+
     $mform->addElement('header', 'netragoheader', get_string('netragoproctoring', 'local_netrago'));
 
-    $mform->addElement('selectyesno', 'netrago_requirecamera', get_string('requirecamera', 'local_netrago'));
-    $mform->addHelpButton('netrago_requirecamera', 'requirecamera', 'local_netrago');
-    $mform->setDefault('netrago_requirecamera', 0);
+    if (get_config('local_netrago', 'allow_camera')) {
+        $mform->addElement('selectyesno', 'netrago_requirecamera', get_string('requirecamera', 'local_netrago'));
+        $mform->addHelpButton('netrago_requirecamera', 'requirecamera', 'local_netrago');
+        $mform->setDefault('netrago_requirecamera', 0);
+    }
 
-    $mform->addElement('selectyesno', 'netrago_requirefullscreen', get_string('requirefullscreen', 'local_netrago'));
-    $mform->addHelpButton('netrago_requirefullscreen', 'requirefullscreen', 'local_netrago');
-    $mform->setDefault('netrago_requirefullscreen', 0);
+    if (get_config('local_netrago', 'allow_fullscreen')) {
+        $mform->addElement('selectyesno', 'netrago_requirefullscreen', get_string('requirefullscreen', 'local_netrago'));
+        $mform->addHelpButton('netrago_requirefullscreen', 'requirefullscreen', 'local_netrago');
+        $mform->setDefault('netrago_requirefullscreen', 0);
+    }
 
-    $mform->addElement('selectyesno', 'netrago_disablecopypaste', get_string('disablecopypaste', 'local_netrago'));
-    $mform->addHelpButton('netrago_disablecopypaste', 'disablecopypaste', 'local_netrago');
-    $mform->setDefault('netrago_disablecopypaste', 0);
+    if (get_config('local_netrago', 'allow_copypaste')) {
+        $mform->addElement('selectyesno', 'netrago_disablecopypaste', get_string('disablecopypaste', 'local_netrago'));
+        $mform->addHelpButton('netrago_disablecopypaste', 'disablecopypaste', 'local_netrago');
+        $mform->setDefault('netrago_disablecopypaste', 0);
+    }
 
     // If editing an existing module, load the current settings.
     $cm = $formwrapper->get_coursemodule();
@@ -93,6 +102,11 @@ function local_netrago_coursemodule_edit_post_actions($data, $course) {
 function local_netrago_before_footer() {
     global $PAGE, $USER, $DB, $CFG;
 
+    // Check global enable
+    if (!get_config('local_netrago', 'enable_plugin')) {
+        return;
+    }
+
     // Ignore if not logged in or is guest or site admin
     if (!isloggedin() || isguestuser() || is_siteadmin()) {
         return;
@@ -128,9 +142,11 @@ function local_netrago_before_footer() {
     $config = [
         'cmid' => $cmid,
         'userid' => $USER->id,
-        'requirecamera' => $settings->requirecamera,
-        'requirefullscreen' => $settings->requirefullscreen,
-        'disablecopypaste' => $settings->disablecopypaste,
+        'requirecamera' => get_config('local_netrago', 'allow_camera') ? $settings->requirecamera : 0,
+        'requirefullscreen' => get_config('local_netrago', 'allow_fullscreen') ? $settings->requirefullscreen : 0,
+        'disablecopypaste' => get_config('local_netrago', 'allow_copypaste') ? $settings->disablecopypaste : 0,
+        'allow_focusloss' => get_config('local_netrago', 'allow_focusloss'),
+        'allow_devtools' => get_config('local_netrago', 'allow_devtools'),
         'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false),
         'descriptor' => $kyc->descriptor
     ];

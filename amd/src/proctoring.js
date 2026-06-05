@@ -27,9 +27,15 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             }
 
             this.monitorTabSwitching();
-            this.monitorFocusLoss();
-            this.blockKeyboardShortcuts();
-            this.detectDevTools();
+            
+            if (this.config.allow_focusloss == 1) {
+                this.monitorFocusLoss();
+            }
+
+            if (this.config.allow_devtools == 1) {
+                this.blockKeyboardShortcuts();
+                this.detectDevTools();
+            }
 
             if (this.config.requirecamera == 1) {
                 this.initCamera();
