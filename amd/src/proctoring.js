@@ -188,7 +188,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                     if (self.baselineDescriptor) {
                         self.faceLoopId = setInterval(function() {
                             self.verifyFaceLoop();
-                        }, 5000);
+                        }, 15000);
                     }
 
                     // Take initial snapshot
@@ -211,7 +211,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
             var canvas = document.createElement('canvas');
             canvas.width = this.videoElement.videoWidth;
             canvas.height = this.videoElement.videoHeight;
-            canvas.getContext('2d').drawImage(this.videoElement, 0, 0);
+            canvas.getContext('2d', { willReadFrequently: true }).drawImage(this.videoElement, 0, 0);
 
             var detections = await faceapi.detectAllFaces(canvas).withFaceLandmarks().withFaceDescriptors();
             
@@ -249,7 +249,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
         takeSnapshot: function(eventType) {
             if (!this.videoElement || !this.stream) return;
 
-            var ctx = this.canvasElement.getContext('2d');
+            var ctx = this.canvasElement.getContext('2d', { willReadFrequently: true });
             ctx.drawImage(this.videoElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
             
             // Reduce quality to save space

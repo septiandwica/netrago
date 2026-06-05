@@ -58,7 +58,7 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
                 var canvas = document.createElement('canvas');
                 canvas.width = self.videoElement.videoWidth;
                 canvas.height = self.videoElement.videoHeight;
-                canvas.getContext('2d').drawImage(self.videoElement, 0, 0);
+                canvas.getContext('2d', { willReadFrequently: true }).drawImage(self.videoElement, 0, 0);
                 
                 var detection = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
                 
@@ -79,7 +79,7 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
                 var canvas = document.createElement('canvas');
                 canvas.width = self.videoElement.videoWidth;
                 canvas.height = self.videoElement.videoHeight;
-                canvas.getContext('2d').drawImage(self.videoElement, 0, 0);
+                canvas.getContext('2d', { willReadFrequently: true }).drawImage(self.videoElement, 0, 0);
                 
                 var detection = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
                 
@@ -131,7 +131,7 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
                 descriptor: JSON.stringify(descriptorArray),
                 sesskey: M.cfg.sesskey
             }).done(function(response) {
-                var res = JSON.parse(response);
+                var res = typeof response === 'string' ? JSON.parse(response) : response;
                 if (res.success) {
                     if (status === 'success') {
                         $('#result-title').text('Verification Successful!');
