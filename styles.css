@@ -49,8 +49,9 @@
 #webcam {
     transform: scaleX(-1);
     width: 100%;
-    max-width: 480px;
+    max-width: 720px;
     display: block;
+    border-radius: 8px;
 }
 
 canvas {

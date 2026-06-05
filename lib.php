@@ -224,12 +224,24 @@ function local_netrago_extend_navigation(global_navigation $nav) {
     // Require KYC Onboarding if they don't have a baseline for this CM.
     $kyc = $DB->get_record('local_netrago_kyc', ['userid' => $USER->id, 'cmid' => $cmid]);
     
-    // Only require KYC if camera/face-verification is enabled for this activity
-    if ($settings->requirecamera && !$kyc) {
+    // Check if user has master face
+    $master_field = $DB->get_record('user_info_field', ['shortname' => 'netrago_master_face']);
+    $master_descriptor = null;
+    if ($master_field) {
+        $master_data = $DB->get_record('user_info_data', ['userid' => $USER->id, 'fieldid' => $master_field->id]);
+        if ($master_data && !empty($master_data->data)) {
+            $master_descriptor = $master_data->data;
+        }
+    }
+
+    // Bypass KYC if camera is not required, OR if they already did KYC for this quiz, OR if they have a Master Face
+    if ($settings->requirecamera && !$kyc && !$master_descriptor) {
         $returnurl = new moodle_url($PAGE->url);
         $kycurl = new moodle_url('/local/netrago/kyc.php', ['cmid' => $cmid, 'returnurl' => $returnurl->out_as_local_url(false)]);
         redirect($kycurl);
     }
+
+    $descriptor_to_use = $kyc ? $kyc->descriptor : ($master_descriptor ? $master_descriptor : null);
 
     // Inject our AMD module.
     $config = [
@@ -242,7 +254,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         'allow_focusloss' => get_config('local_netrago', 'allow_focusloss') ? $settings->disablefocusloss : 0,
         'allow_devtools' => get_config('local_netrago', 'allow_devtools') ? $settings->disabledevtools : 0,
         'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false),
-        'descriptor' => $kyc ? $kyc->descriptor : null
+        'descriptor' => $descriptor_to_use
     ];
 
     // No-JS Fallback: Hide the main content via CSS.
@@ -250,17 +262,19 @@ function local_netrago_extend_navigation(global_navigation $nav) {
     $warningmsg = get_string('js_required_warning', 'local_netrago');
     $css = "
         <style id='netrago-anti-js-bypass'>
-            #region-main, .region-main, [role='main'] { display: none !important; }
-            .netrago-nojs-warning { 
-                padding: 20px; background: #f8d7da; color: #721c24; 
-                border: 1px solid #f5c6cb; border-radius: 5px; 
-                font-weight: bold; text-align: center; margin: 20px;
+            body { overflow: hidden !important; }
+            #netrago-nojs-warning { 
+                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+                background: #f8d7da; color: #721c24; 
+                z-index: 9999999; display: flex; flex-direction: column;
+                align-items: center; justify-content: center;
+                font-size: 1.2rem; font-weight: bold; text-align: center; padding: 20px;
             }
         </style>
-        <div class='netrago-nojs-warning' id='netrago-nojs-warning'>
-            <i class='fa fa-exclamation-triangle fa-2x mb-2'></i><br>
-            <span id='netrago-warning-text'>{$warningmsg}</span><br>
-            <button id='netrago-start-btn' class='btn btn-primary mt-3' style='display:none;'><i class='fa fa-desktop'></i> Start Activity & Share Screen</button>
+        <div id='netrago-nojs-warning'>
+            <i class='fa fa-exclamation-triangle fa-3x mb-3'></i>
+            <span id='netrago-warning-text'>{$warningmsg}</span>
+            <button id='netrago-start-btn' class='btn btn-primary mt-4' style='display:none; font-size: 1.1rem; padding: 10px 20px;'><i class='fa fa-desktop'></i> Start Activity & Share Screen</button>
         </div>
     ";
     

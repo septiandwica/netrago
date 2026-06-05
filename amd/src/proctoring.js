@@ -195,21 +195,64 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
         enforceFullscreen: function() {
             var self = this;
             
-            // Wait for user interaction to request fullscreen (browser security)
-            document.addEventListener('click', function requestFS() {
-                if (!document.fullscreenElement) {
+            var createFSOVerlay = function() {
+                if (document.getElementById('netrago-fs-overlay')) return;
+                var overlay = document.createElement('div');
+                overlay.id = 'netrago-fs-overlay';
+                overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:sans-serif; text-align:center;';
+                
+                var icon = document.createElement('i');
+                icon.className = 'fa fa-expand fa-4x mb-4';
+                overlay.appendChild(icon);
+                
+                var title = document.createElement('h2');
+                title.innerText = 'Fullscreen Mode Required';
+                title.style.color = 'white';
+                overlay.appendChild(title);
+                
+                var desc = document.createElement('p');
+                desc.innerText = 'You must enter fullscreen mode to participate in this activity.';
+                overlay.appendChild(desc);
+                
+                var btn = document.createElement('button');
+                btn.className = 'btn btn-primary btn-lg mt-3';
+                btn.innerText = 'Enter Fullscreen to Continue';
+                btn.style.cssText = 'padding:10px 24px; font-size:1.2rem; cursor:pointer;';
+                btn.onclick = function() {
                     document.documentElement.requestFullscreen().catch(err => {
-                        console.log("Error attempting to enable fullscreen:", err.message);
+                        console.log(err);
                     });
+                };
+                overlay.appendChild(btn);
+                
+                document.body.appendChild(overlay);
+                document.body.style.overflow = 'hidden';
+            };
+
+            var removeFSOVerlay = function() {
+                var overlay = document.getElementById('netrago-fs-overlay');
+                if (overlay) {
+                    overlay.remove();
+                    document.body.style.overflow = '';
                 }
-                document.removeEventListener('click', requestFS);
-            });
+            };
+
+            if (!document.fullscreenElement) {
+                createFSOVerlay();
+            }
 
             document.addEventListener('fullscreenchange', function() {
                 if (!document.fullscreenElement) {
-                    // Log exit fullscreen
                     self.logEvent('fullscreen_exit');
-                    notification.alert('NetraGo Warning', 'You must remain in Fullscreen mode! Exiting fullscreen has been logged.', 'I Understand');
+                    if (self.config.requirecamera == 1 && self.videoElement) {
+                        self.takeSnapshot('fullscreen_exit_snapshot');
+                    }
+                    if (self.config.requirescreencapture == 1 && self.screenVideoElement) {
+                        self.takeScreenSnapshot('fullscreen_exit_snapshot');
+                    }
+                    createFSOVerlay();
+                } else {
+                    removeFSOVerlay();
                 }
             });
         },
@@ -245,13 +288,24 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
             this.canvasElement.style.display = 'none';
             document.body.appendChild(this.canvasElement);
 
-            try {
-                var modelPath = M.cfg.wwwroot + '/local/netrago/models';
-                await faceapi.nets.ssdMobilenetv1.loadFromUri(modelPath);
-                await faceapi.nets.faceLandmark68Net.loadFromUri(modelPath);
-                await faceapi.nets.faceRecognitionNet.loadFromUri(modelPath);
-            } catch (err) {
+            this.modelsLoaded = false;
+            var modelPath = M.cfg.wwwroot + '/local/netrago/models';
+            Promise.all([
+                faceapi.nets.ssdMobilenetv1.loadFromUri(modelPath),
+                faceapi.nets.faceLandmark68Net.loadFromUri(modelPath),
+                faceapi.nets.faceRecognitionNet.loadFromUri(modelPath)
+            ]).then(() => {
+                self.modelsLoaded = true;
+            }).catch(err => {
                 console.error("NetraGo AI Model Load Error:", err);
+            });
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                var warningText = document.getElementById('netrago-warning-text');
+                if (warningText) {
+                    warningText.innerText = "Camera API is not supported in this browser or you are not on a secure HTTPS connection.";
+                }
+                return;
             }
 
             navigator.mediaDevices.getUserMedia({ video: true })
@@ -291,7 +345,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
         },
 
         verifyFaceLoop: async function() {
-            if (!this.videoElement || !this.stream) return;
+            if (!this.videoElement || !this.stream || !this.modelsLoaded) return;
 
             var canvas = document.createElement('canvas');
             canvas.width = this.videoElement.videoWidth;
