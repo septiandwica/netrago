@@ -138,12 +138,6 @@ function local_netrago_before_footer() {
     $cmid = $PAGE->cm->id;
     $context = context_module::instance($cmid);
 
-    // Do not proctor users who can manage activities (Teachers/Admins).
-    // This allows them to test the plugin by using the "Switch role to... Student" feature.
-    if (has_capability('moodle/course:manageactivities', $context)) {
-        return;
-    }
-
     // Check if this module has NetraGo enabled.
     $settings = $DB->get_record('local_netrago', ['cmid' => $cmid]);
     if (!$settings) {
@@ -151,6 +145,17 @@ function local_netrago_before_footer() {
     }
 
     if (!$settings->requirecamera && !$settings->requirefullscreen && !$settings->disablecopypaste && !$settings->disablefocusloss && !$settings->disabledevtools) {
+        return;
+    }
+
+    // Do not proctor users who can manage activities (Teachers/Admins).
+    // This allows them to test the plugin by using the "Switch role to... Student" feature.
+    // Instead of proctoring them, we show a "View NetraGo Report" button.
+    if (has_capability('moodle/course:manageactivities', $context)) {
+        $reporturl = new moodle_url('/local/netrago/report.php', ['cmid' => $cmid]);
+        $btncss = "<style>.netrago-teacher-btn { display:block; margin: 15px 0; padding: 10px; background:#007bff; color:#fff; text-align:center; border-radius:5px; font-weight:bold; text-decoration:none; }</style>";
+        $CFG->additionalhtmlhead .= $btncss;
+        echo "<a href='{$reporturl}' class='netrago-teacher-btn'><i class='fa fa-shield'></i> View NetraGo Proctoring Report for this Activity</a>";
         return;
     }
 
