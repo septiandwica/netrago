@@ -135,12 +135,33 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         return;
     }
 
-    // Only inject if we are viewing a specific course module.
-    if (!isset($PAGE->cm) || empty($PAGE->cm->id)) {
+    // Try to get cmid from PAGE or from URL parameters
+    $cmid = 0;
+    if (isset($PAGE->cm) && !empty($PAGE->cm->id)) {
+        $cmid = $PAGE->cm->id;
+    } else {
+        $cmid = optional_param('cmid', 0, PARAM_INT);
+        if (!$cmid) {
+            $cmid = optional_param('id', 0, PARAM_INT);
+        }
+    }
+
+    if (!$cmid) {
         return;
     }
 
-    $cmid = $PAGE->cm->id;
+    // We only want to inject on view/attempt pages, not course pages or edit pages
+    $urlpath = '';
+    if ($PAGE->url) {
+        $urlpath = $PAGE->url->out_as_local_url(false);
+    } else {
+        $urlpath = $_SERVER['REQUEST_URI'];
+    }
+    
+    if (strpos($urlpath, '/mod/') === false || strpos($urlpath, 'edit') !== false) {
+        return;
+    }
+
     $context = context_module::instance($cmid);
 
     // Check if this module has NetraGo enabled.
