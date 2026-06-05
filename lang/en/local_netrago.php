@@ -1,0 +1,42 @@
+<?php
+/**
+ * Language strings for local_netrago
+ *
+ * @package    local_netrago
+ * @copyright  2026 Tateta
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+$string['pluginname'] = 'NetraGo';
+$string['netragoproctoring'] = 'NetraGo Options';
+$string['enablenetrago'] = 'Enable NetraGo';
+$string['requirecamera'] = 'Require webcam snapshots';
+$string['requirecamera_help'] = 'If enabled, students must allow camera access. Snapshots will be taken periodically to detect cheating.';
+$string['requirefullscreen'] = 'Enforce fullscreen mode';
+$string['requirefullscreen_help'] = 'If enabled, students must remain in fullscreen mode. Exiting fullscreen will be logged as a suspicious event.';
+$string['disablecopypaste'] = 'Disable copy, paste, and text selection';
+$string['disablecopypaste_help'] = 'If enabled, students will not be able to select text, right-click, or use copy/paste shortcuts.';
+
+// Frontend messages.
+$string['setup_required'] = 'Proctoring setup required';
+$string['setup_instructions'] = 'This activity is monitored by NetraGo. Before you begin, you must grant the necessary permissions.';
+$string['grant_camera'] = 'Grant Camera Access';
+$string['camera_denied'] = 'Camera access denied or unavailable. You cannot continue.';
+$string['start_fullscreen'] = 'Start Fullscreen & Continue';
+$string['fullscreen_exited'] = 'You must remain in Fullscreen mode! Exiting fullscreen has been logged.';
+
+// Event types.
+$string['event_snapshot'] = 'Webcam Snapshot';
+$string['event_tab_switch'] = 'Switched browser tab or minimized window';
+$string['event_fullscreen_exit'] = 'Exited fullscreen mode';
+$string['event_copy_attempt'] = 'Attempted to copy/paste';
+
+// Reports.
+$string['viewreports'] = 'View NetraGo Proctoring Reports';
+$string['report_title'] = 'NetraGo Report: {$a}';
+$string['no_suspicious_events'] = 'No suspicious events detected.';
+$string['suspicious_events'] = 'Suspicious Events detected';
+$string['timestamp'] = 'Time';
+$string['eventtype'] = 'Event';
+$string['details'] = 'Details';
+$string['backtoactivity'] = 'Back to Activity';
