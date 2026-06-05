@@ -15,7 +15,16 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
             this.config = config;
             
             if (this.config.descriptor) {
-                this.baselineDescriptor = new Float32Array(JSON.parse(this.config.descriptor));
+                try {
+                    var parsed = JSON.parse(this.config.descriptor);
+                    if (Array.isArray(parsed)) {
+                        this.baselineDescriptor = new Float32Array(parsed);
+                    } else {
+                        console.error("KYC Descriptor is not an array:", parsed);
+                    }
+                } catch (e) {
+                    console.error("Invalid KYC descriptor data from database:", e);
+                }
             }
 
             if (this.config.disablecopypaste == 1) {
