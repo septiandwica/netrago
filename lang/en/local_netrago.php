@@ -16,6 +16,10 @@ $string['requirefullscreen'] = 'Enforce fullscreen mode';
 $string['requirefullscreen_help'] = 'If enabled, students must remain in fullscreen mode. Exiting fullscreen will be logged as a suspicious event.';
 $string['disablecopypaste'] = 'Disable copy, paste, and text selection';
 $string['disablecopypaste_help'] = 'If enabled, students will not be able to select text, right-click, or use copy/paste shortcuts.';
+$string['disablefocusloss'] = 'Enable Focus Loss Detection';
+$string['disablefocusloss_help'] = 'Detect when a student clicks outside the browser or switches to another application.';
+$string['disabledevtools'] = 'Enable DevTools & Keyboard Blocking';
+$string['disabledevtools_help'] = 'Block F12, Ctrl+P, and other developer shortcuts.';
 
 // Frontend messages.
 $string['setup_required'] = 'Proctoring setup required';

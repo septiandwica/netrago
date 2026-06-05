@@ -43,6 +43,18 @@ function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
         $mform->setDefault('netrago_disablecopypaste', 0);
     }
 
+    if (get_config('local_netrago', 'allow_focusloss')) {
+        $mform->addElement('selectyesno', 'netrago_disablefocusloss', get_string('disablefocusloss', 'local_netrago'));
+        $mform->addHelpButton('netrago_disablefocusloss', 'disablefocusloss', 'local_netrago');
+        $mform->setDefault('netrago_disablefocusloss', 0);
+    }
+
+    if (get_config('local_netrago', 'allow_devtools')) {
+        $mform->addElement('selectyesno', 'netrago_disabledevtools', get_string('disabledevtools', 'local_netrago'));
+        $mform->addHelpButton('netrago_disabledevtools', 'disabledevtools', 'local_netrago');
+        $mform->setDefault('netrago_disabledevtools', 0);
+    }
+
     // If editing an existing module, load the current settings.
     $cm = $formwrapper->get_coursemodule();
     if ($cm && $cm->id) {
@@ -51,6 +63,8 @@ function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
             $mform->setDefault('netrago_requirecamera', $settings->requirecamera);
             $mform->setDefault('netrago_requirefullscreen', $settings->requirefullscreen);
             $mform->setDefault('netrago_disablecopypaste', $settings->disablecopypaste);
+            $mform->setDefault('netrago_disablefocusloss', $settings->disablefocusloss ?? 0);
+            $mform->setDefault('netrago_disabledevtools', $settings->disabledevtools ?? 0);
         }
     }
 }
@@ -75,13 +89,17 @@ function local_netrago_coursemodule_edit_post_actions($data, $course) {
     $requirecamera = isset($data->netrago_requirecamera) ? $data->netrago_requirecamera : 0;
     $requirefullscreen = isset($data->netrago_requirefullscreen) ? $data->netrago_requirefullscreen : 0;
     $disablecopypaste = isset($data->netrago_disablecopypaste) ? $data->netrago_disablecopypaste : 0;
+    $disablefocusloss = isset($data->netrago_disablefocusloss) ? $data->netrago_disablefocusloss : 0;
+    $disabledevtools = isset($data->netrago_disabledevtools) ? $data->netrago_disabledevtools : 0;
 
-    if ($requirecamera || $requirefullscreen || $disablecopypaste) {
+    if ($requirecamera || $requirefullscreen || $disablecopypaste || $disablefocusloss || $disabledevtools) {
         $record = new stdClass();
         $record->cmid = $cmid;
         $record->requirecamera = $requirecamera;
         $record->requirefullscreen = $requirefullscreen;
         $record->disablecopypaste = $disablecopypaste;
+        $record->disablefocusloss = $disablefocusloss;
+        $record->disabledevtools = $disabledevtools;
 
         if ($settings) {
             $record->id = $settings->id;
@@ -125,14 +143,15 @@ function local_netrago_before_footer() {
         return;
     }
 
-    if (!$settings->requirecamera && !$settings->requirefullscreen && !$settings->disablecopypaste) {
+    if (!$settings->requirecamera && !$settings->requirefullscreen && !$settings->disablecopypaste && !$settings->disablefocusloss && !$settings->disabledevtools) {
         return;
     }
 
     // Require KYC Onboarding if they don't have a baseline for this CM.
     $kyc = $DB->get_record('local_netrago_kyc', ['userid' => $USER->id, 'cmid' => $cmid]);
     
-    if (!$kyc) {
+    // Only require KYC if camera/face-verification is enabled for this activity
+    if ($settings->requirecamera && !$kyc) {
         $returnurl = new moodle_url($PAGE->url);
         $kycurl = new moodle_url('/local/netrago/kyc.php', ['cmid' => $cmid, 'returnurl' => $returnurl->out_as_local_url(false)]);
         redirect($kycurl);
@@ -145,10 +164,10 @@ function local_netrago_before_footer() {
         'requirecamera' => get_config('local_netrago', 'allow_camera') ? $settings->requirecamera : 0,
         'requirefullscreen' => get_config('local_netrago', 'allow_fullscreen') ? $settings->requirefullscreen : 0,
         'disablecopypaste' => get_config('local_netrago', 'allow_copypaste') ? $settings->disablecopypaste : 0,
-        'allow_focusloss' => get_config('local_netrago', 'allow_focusloss'),
-        'allow_devtools' => get_config('local_netrago', 'allow_devtools'),
+        'allow_focusloss' => get_config('local_netrago', 'allow_focusloss') ? $settings->disablefocusloss : 0,
+        'allow_devtools' => get_config('local_netrago', 'allow_devtools') ? $settings->disabledevtools : 0,
         'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false),
-        'descriptor' => $kyc->descriptor
+        'descriptor' => $kyc ? $kyc->descriptor : null
     ];
 
     // No-JS Fallback: Hide the main content via CSS.
