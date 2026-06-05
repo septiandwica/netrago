@@ -115,6 +115,15 @@ function local_netrago_before_footer() {
         return;
     }
 
+    // Require KYC Onboarding if they don't have a baseline for this CM.
+    $kyc = $DB->get_record('local_netrago_kyc', ['userid' => $USER->id, 'cmid' => $cmid]);
+    
+    if (!$kyc) {
+        $returnurl = new moodle_url($PAGE->url);
+        $kycurl = new moodle_url('/local/netrago/kyc.php', ['cmid' => $cmid, 'returnurl' => $returnurl->out_as_local_url(false)]);
+        redirect($kycurl);
+    }
+
     // Inject our AMD module.
     $config = [
         'cmid' => $cmid,
@@ -122,7 +131,8 @@ function local_netrago_before_footer() {
         'requirecamera' => $settings->requirecamera,
         'requirefullscreen' => $settings->requirefullscreen,
         'disablecopypaste' => $settings->disablecopypaste,
-        'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false)
+        'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false),
+        'descriptor' => $kyc->descriptor
     ];
 
     // No-JS Fallback: Hide the main content via CSS.
@@ -146,5 +156,6 @@ function local_netrago_before_footer() {
     // We add this to the page header so it renders before the content.
     $CFG->additionalhtmlhead .= $css;
 
+    $PAGE->requires->js(new moodle_url('/local/netrago/amd/src/face-api.min.js'));
     $PAGE->requires->js_call_amd('local_netrago/proctoring', 'init', [$config]);
 }

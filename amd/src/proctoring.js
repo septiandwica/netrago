@@ -6,9 +6,17 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         canvasElement: null,
         stream: null,
         intervalId: null,
+        faceLoopId: null,
+        baselineDescriptor: null,
+        strikes: 0,
+        devToolsLogged: false,
 
         init: function(config) {
             this.config = config;
+            
+            if (this.config.descriptor) {
+                this.baselineDescriptor = new Float32Array(JSON.parse(this.config.descriptor));
+            }
 
             if (this.config.disablecopypaste == 1) {
                 this.disableCopyPaste();
@@ -137,7 +145,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             });
         },
 
-        initCamera: function() {
+        initCamera: async function() {
             var self = this;
 
             this.videoElement = document.createElement('video');
@@ -151,6 +159,15 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             this.canvasElement.style.display = 'none';
             document.body.appendChild(this.canvasElement);
 
+            try {
+                var modelPath = M.cfg.wwwroot + '/local/netrago/models';
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(modelPath);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(modelPath);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(modelPath);
+            } catch (err) {
+                console.error("NetraGo AI Model Load Error:", err);
+            }
+
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then(function(stream) {
                     self.stream = stream;
@@ -160,6 +177,13 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     self.intervalId = setInterval(function() {
                         self.takeSnapshot('snapshot');
                     }, 60000);
+
+                    // Start continuous face verification loop (every 5 seconds)
+                    if (self.baselineDescriptor) {
+                        self.faceLoopId = setInterval(function() {
+                            self.verifyFaceLoop();
+                        }, 5000);
+                    }
 
                     // Take initial snapshot
                     setTimeout(function() {
@@ -173,6 +197,47 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 .catch(function(err) {
                     alert("NetraGo: Camera access is required to proceed. " + err.message);
                 });
+        },
+
+        verifyFaceLoop: async function() {
+            if (!this.videoElement || !this.stream) return;
+
+            var canvas = document.createElement('canvas');
+            canvas.width = this.videoElement.videoWidth;
+            canvas.height = this.videoElement.videoHeight;
+            canvas.getContext('2d').drawImage(this.videoElement, 0, 0);
+
+            var detections = await faceapi.detectAllFaces(canvas).withFaceLandmarks().withFaceDescriptors();
+            
+            if (detections.length === 0) {
+                this.handleViolation('Face not found in camera frame.');
+                return;
+            }
+            if (detections.length > 1) {
+                this.handleViolation('Multiple faces detected in camera frame.');
+                return;
+            }
+
+            // Exactly 1 face, let's compare
+            var distance = faceapi.euclideanDistance(detections[0].descriptor, this.baselineDescriptor);
+            if (distance > 0.6) {
+                this.handleViolation('Unrecognized face detected. Does not match KYC identity.');
+            }
+        },
+
+        handleViolation: function(reason) {
+            this.strikes++;
+            this.takeSnapshot('face_violation_' + this.strikes);
+            
+            if (this.strikes >= 3) {
+                alert("FINAL WARNING EXCEEDED: " + reason + "\nYou have been kicked from the activity.");
+                window.location.href = M.cfg.wwwroot + '/course/view.php?id=' + M.cfg.courseId; // Kick to course
+            } else {
+                // Obscure screen with blur
+                document.body.style.filter = 'blur(10px)';
+                alert("WARNING " + this.strikes + "/3: " + reason + "\nPlease look at the camera immediately.");
+                document.body.style.filter = 'none';
+            }
         },
 
         takeSnapshot: function(eventType) {

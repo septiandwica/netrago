@@ -35,5 +35,37 @@
         <INDEX NAME="cmid_userid" UNIQUE="false" FIELDS="cmid, userid"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_netrago_kyc" COMMENT="Stores successful KYC baselines">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="selfiedata" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="ktpdata" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="descriptor" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="JSON array of face descriptor floats"/>
+        <FIELD NAME="timeverified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_cmid" UNIQUE="true" FIELDS="userid, cmid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_netrago_kyc_attempts" COMMENT="Tracks KYC rate limits">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timeattempted" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_cmid" UNIQUE="false" FIELDS="userid, cmid"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>
