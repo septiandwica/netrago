@@ -16,12 +16,10 @@ $selfiedata = optional_param('selfiedata', '', PARAM_RAW);
 $ktpdata = optional_param('ktpdata', '', PARAM_RAW);
 $descriptor = optional_param('descriptor', '', PARAM_RAW);
 
-require_login();
-require_sesskey();
-
 $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
+require_login($cm->course, true, $cm);
+require_sesskey();
 $context = context_module::instance($cm->id);
-require_capability('moodle/course:view', $context);
 
 // Rate limiting check
 $thirty_mins_ago = time() - (30 * 60);

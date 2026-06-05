@@ -14,12 +14,9 @@ $cmid = required_param('cmid', PARAM_INT);
 $eventtype = required_param('eventtype', PARAM_ALPHANUMEXT);
 $imagedata = optional_param('imagedata', '', PARAM_RAW);
 
-require_login();
-
-// Validate user has access to this course module.
 $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
+require_login($cm->course, true, $cm);
 $context = context_module::instance($cm->id);
-require_capability('moodle/course:view', $context);
 
 $log = new stdClass();
 $log->cmid = $cm->id;
