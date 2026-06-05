@@ -94,7 +94,7 @@ define('local_netrago/kyc', ['jquery', 'core/ajax', 'core/notification'], functi
 
                     if (ratio < 0.05) {
                         self.videoElement.play(); // Unfreeze
-                        notification.alert('NetraGo Warning', 'Wajah terlalu kecil. Jangan gunakan KTP, dekatkan wajah asli Anda ke kamera.', 'Try Again');
+                        notification.alert('NetraGo Warning', 'Face is too small. Do not use an ID Card, please ensure your real face is close to the camera.', 'Try Again');
                         btn.prop('disabled', false).text('Capture Selfie');
                         return;
                     }
@@ -137,7 +137,7 @@ define('local_netrago/kyc', ['jquery', 'core/ajax', 'core/notification'], functi
 
                     if (ratio > 0.15) {
                         self.videoElement.play(); // Unfreeze
-                        notification.alert('NetraGo Warning', 'Wajah di kamera terlalu besar. Harap tunjukkan Kartu Identitas Resmi (KTP/KTM/SIM), BUKAN wajah Anda secara langsung.', 'Try Again');
+                        notification.alert('NetraGo Warning', 'Face in camera is too large. Please show your Official ID Card, NOT your actual face.', 'Try Again');
                         btn.prop('disabled', false).text('Capture ID & Verify');
                         return;
                     }

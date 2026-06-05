@@ -91,9 +91,9 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                             btn.innerHTML = "<i class='fa fa-desktop'></i> Start Activity & Share Screen";
                         }
                         if (warningText) {
-                            warningText.innerText = "Anda HARUS membagikan 'Entire Screen' (Seluruh Layar). Membagikan Jendela/Tab dilarang.";
+                            warningText.innerText = "You MUST share your 'Entire Screen'. Sharing a Window or Tab is prohibited.";
                         } else {
-                            notification.alert('NetraGo Warning', 'Anda HARUS membagikan "Entire Screen" (Seluruh Layar). Membagikan Jendela/Tab dilarang.', 'Ulangi');
+                            notification.alert('NetraGo Warning', 'You MUST share your "Entire Screen". Sharing a Window or Tab is prohibited.', 'Try Again');
                         }
                         return;
                     }
