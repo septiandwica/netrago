@@ -144,6 +144,58 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         return;
     }
 
+    $urlpath = '';
+    if ($PAGE->url) {
+        $urlpath = $PAGE->url->out_as_local_url(false);
+    } else {
+        $urlpath = $_SERVER['REQUEST_URI'] ?? '';
+    }
+
+    // Inject into Course Grader Report (Course Gradebook)
+    if (strpos($urlpath, '/grade/report/grader/index.php') !== false) {
+        $courseid = optional_param('id', 0, PARAM_INT);
+        if ($courseid && has_capability('moodle/course:manageactivities', context_course::instance($courseid))) {
+            $sql = "SELECT l.userid, COUNT(l.id) as vcount 
+                    FROM {local_netrago_logs} l
+                    JOIN {course_modules} cm ON cm.id = l.cmid
+                    WHERE cm.course = ?
+                    GROUP BY l.userid";
+            $violators = $DB->get_records_sql($sql, [$courseid]);
+            
+            if ($violators) {
+                $violator_data = [];
+                foreach ($violators as $v) {
+                    $violator_data[$v->userid] = $v->vcount;
+                }
+                $js = "
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var violators = " . json_encode($violator_data) . ";
+                        var links = document.querySelectorAll('a[href*=\"user/view.php\"]');
+                        links.forEach(function(link) {
+                            try {
+                                var url = new URL(link.href, window.location.origin);
+                                var uid = url.searchParams.get('id');
+                                if (uid && violators[uid]) {
+                                    // Check if badge already exists
+                                    if (link.parentNode.querySelector('.netrago-course-badge')) return;
+                                    
+                                    var badge = document.createElement('span');
+                                    badge.className = 'badge badge-danger ml-2 netrago-course-badge';
+                                    badge.style.cssText = 'background-color:#dc3545;color:white;padding:3px 6px;border-radius:4px;font-size:0.85em;';
+                                    badge.title = 'Total NetraGo Violations in this Course';
+                                    badge.innerHTML = '⚠️ ' + violators[uid] + ' Violations';
+                                    link.parentNode.appendChild(badge);
+                                }
+                            } catch (e) {}
+                        });
+                    });
+                ";
+                $CFG->additionalhtmlhead .= "<script>{$js}</script>";
+            }
+        }
+        return; // Stop execution here, no need for cmid logic on gradebook
+    }
+
     // Try to get cmid from PAGE or from URL parameters
     $cmid = 0;
     if (isset($PAGE->cm) && !empty($PAGE->cm->id)) {
