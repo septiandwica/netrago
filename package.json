@@ -1,0 +1,16 @@
+{
+  "name": "moodle-local_netrago",
+  "version": "1.0.0",
+  "description": "NetraGo Proctoring Plugin",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "grunt": "^1.6.1",
+    "grunt-amd-dist": "^1.1.0",
+    "grunt-contrib-uglify": "^5.2.2",
+    "grunt-contrib-watch": "^1.1.0",
+    "grunt-eslint": "^24.3.0"
+  }
+}
