@@ -1,4 +1,4 @@
-define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notification) {
+define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'], function($, ajax, notification) {
 
     var NetraGoProctor = {
         config: null,

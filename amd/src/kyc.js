@@ -1,4 +1,4 @@
-define(['jquery', 'core/ajax'], function($) {
+define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
 
     var NetraGoKYC = {
         config: null,
