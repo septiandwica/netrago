@@ -114,20 +114,26 @@ define('local_netrago/kyc', ['jquery', 'core/ajax', 'core/notification'], functi
         },
 
         verifyMatch: function() {
+            var self = this;
             this.showStep('step-result');
-            $('#result-title').text('Analyzing Faces...');
-            $('#result-desc').text('Comparing selfie with ID card...');
+            $('#result-icon').attr('class', 'fa fa-spinner fa-spin step-icon');
+            $('#result-title').text('Verifying Identity...');
+            $('#btn-retry').hide();
             
-            // Calculate Euclidean distance
             var distance = faceapi.euclideanDistance(this.selfieDescriptor, this.idCardDescriptor);
-            var threshold = 0.6; // face-api.js default threshold
             
-            if (distance < threshold) {
+            // 0.6 is typical threshold for ssdMobilenetv1
+            if (distance < 0.6) {
                 // Match successful
+                $('#result-icon').attr('class', 'fa fa-check-circle step-icon text-success');
                 this.saveKYCResult('success', Array.from(this.selfieDescriptor));
             } else {
-                // Mismatch
-                this.saveKYCResult('failed', []);
+                // Match failed
+                $('#result-icon').attr('class', 'fa fa-times-circle step-icon text-danger');
+                $('#result-title').text('Verification Failed');
+                $('#result-desc').text('Faces do not match. Please ensure the ID card belongs to you and is clearly visible.');
+                $('#btn-retry').show();
+                this.saveKYCResult('failed', null);
             }
         },
 
