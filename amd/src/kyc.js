@@ -170,8 +170,8 @@ define('local_netrago/kyc', ['jquery', 'core/ajax', 'core/notification'], functi
             
             var distance = faceapi.euclideanDistance(this.selfieDescriptor, this.idCardDescriptor);
             
-            // 0.6 is typical threshold for ssdMobilenetv1
-            if (distance < 0.6) {
+            // 0.45 is stricter threshold for ssdMobilenetv1 to prevent spoofing
+            if (distance < 0.45) {
                 // Match successful
                 $('#result-icon').attr('class', 'fa fa-check-circle step-icon text-success');
                 this.saveKYCResult('success', Array.from(this.selfieDescriptor));

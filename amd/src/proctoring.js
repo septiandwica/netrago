@@ -49,6 +49,8 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 this.detectDevTools();
             }
 
+            this.bindSubmitListener();
+
             var warningText = document.getElementById('netrago-warning-text');
 
             if (this.config.requirescreencapture == 1) {
@@ -79,6 +81,23 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
             var self = this;
             navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
                 .then(function(stream) {
+                    var trackSettings = stream.getVideoTracks()[0].getSettings();
+                    if (trackSettings.displaySurface && trackSettings.displaySurface !== 'monitor') {
+                        stream.getTracks().forEach(track => track.stop());
+                        var warningText = document.getElementById('netrago-warning-text');
+                        var btn = document.getElementById('netrago-start-btn');
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = "<i class='fa fa-desktop'></i> Start Activity & Share Screen";
+                        }
+                        if (warningText) {
+                            warningText.innerText = "Anda HARUS membagikan 'Entire Screen' (Seluruh Layar). Membagikan Jendela/Tab dilarang.";
+                        } else {
+                            notification.alert('NetraGo Warning', 'Anda HARUS membagikan "Entire Screen" (Seluruh Layar). Membagikan Jendela/Tab dilarang.', 'Ulangi');
+                        }
+                        return;
+                    }
+
                     self.screenStream = stream;
                     
                     self.screenVideoElement = document.createElement('video');
@@ -219,9 +238,16 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 btn.innerText = 'Enter Fullscreen to Continue';
                 btn.style.cssText = 'padding:10px 24px; font-size:1.2rem; cursor:pointer;';
                 btn.onclick = function() {
-                    document.documentElement.requestFullscreen().catch(err => {
-                        console.log(err);
-                    });
+                    var docElm = document.documentElement;
+                    if (docElm.requestFullscreen) {
+                        docElm.requestFullscreen().catch(e => console.log(e));
+                    } else if (docElm.mozRequestFullScreen) {
+                        docElm.mozRequestFullScreen().catch(e => console.log(e));
+                    } else if (docElm.webkitRequestFullScreen) {
+                        docElm.webkitRequestFullScreen().catch(e => console.log(e));
+                    } else if (docElm.msRequestFullscreen) {
+                        docElm.msRequestFullscreen().catch(e => console.log(e));
+                    }
                 };
                 overlay.appendChild(btn);
                 
@@ -237,12 +263,10 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 }
             };
 
-            if (!document.fullscreenElement) {
-                createFSOVerlay();
-            }
-
-            document.addEventListener('fullscreenchange', function() {
-                if (!document.fullscreenElement) {
+            var checkFullscreen = function() {
+                var isFS = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+                if (!isFS) {
+                    if (window.isSubmitting) return; // Allow exit during submit
                     self.logEvent('fullscreen_exit');
                     if (self.config.requirecamera == 1 && self.videoElement) {
                         self.takeSnapshot('fullscreen_exit_snapshot');
@@ -254,13 +278,24 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 } else {
                     removeFSOVerlay();
                 }
-            });
+            };
+
+            var isInitFS = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+            if (!isInitFS) {
+                createFSOVerlay();
+            }
+
+            document.addEventListener('fullscreenchange', checkFullscreen);
+            document.addEventListener('webkitfullscreenchange', checkFullscreen);
+            document.addEventListener('mozfullscreenchange', checkFullscreen);
+            document.addEventListener('MSFullscreenChange', checkFullscreen);
         },
 
         monitorTabSwitching: function() {
             var self = this;
             document.addEventListener("visibilitychange", function() {
                 if (document.visibilityState === 'hidden') {
+                    if (window.isSubmitting) return; // Allow exit during submit
                     self.logEvent('tab_switch');
                     
                     // If camera is enabled, take a snapshot immediately upon suspicious event
@@ -271,6 +306,10 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                         self.takeScreenSnapshot('tab_switch_snapshot');
                     }
                 }
+            });
+            window.addEventListener('blur', function() {
+                if (window.isSubmitting) return; // Allow exit during submit
+                self.logEvent('focus_loss');
             });
         },
 
@@ -365,7 +404,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
 
             // Exactly 1 face, let's compare
             var distance = faceapi.euclideanDistance(detections[0].descriptor, this.baselineDescriptor);
-            if (distance > 0.6) {
+            if (distance > 0.45) {
                 this.handleViolation('Unrecognized face detected. Does not match KYC identity.');
             }
         },
@@ -394,6 +433,10 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                         form.appendChild(input2);
                         
                         window.onbeforeunload = null;
+                        if (window.M && M.core_formchangechecker) {
+                            M.core_formchangechecker.reset_form_dirty_state();
+                        }
+                        window.isSubmitting = true;
                         form.submit();
                     } else {
                         window.onbeforeunload = null;
@@ -447,6 +490,23 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 eventtype: eventType,
                 imagedata: imageData,
                 sesskey: M.cfg.sesskey
+            });
+        },
+
+        sendHeartbeat: function() {
+            var url = M.cfg.wwwroot + '/local/netrago/ajax_heartbeat.php';
+            $.post(url, {
+                cmid: this.config.cmid,
+                sesskey: M.cfg.sesskey
+            });
+        },
+
+        bindSubmitListener: function() {
+            var forms = document.querySelectorAll('form');
+            forms.forEach(function(f) {
+                f.addEventListener('submit', function() {
+                    window.isSubmitting = true;
+                });
             });
         }
     };
