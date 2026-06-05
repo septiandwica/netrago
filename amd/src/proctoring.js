@@ -37,6 +37,11 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 this.detectDevTools();
             }
 
+            var warningText = document.getElementById('netrago-warning-text');
+            if (warningText) {
+                warningText.innerText = "Initializing NetraGo Proctoring...";
+            }
+
             if (this.config.requirecamera == 1) {
                 this.initCamera();
             } else {
@@ -201,7 +206,12 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
 
                 })
                 .catch(function(err) {
-                    alert("NetraGo: Camera access is required to proceed. " + err.message);
+                    var warningText = document.getElementById('netrago-warning-text');
+                    if (warningText) {
+                        warningText.innerText = "Camera access is denied or not available. Please allow camera access in your browser settings and refresh the page. (" + err.message + ")";
+                    } else {
+                        alert("NetraGo: Camera access is required to proceed. " + err.message);
+                    }
                 });
         },
 
