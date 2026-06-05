@@ -239,14 +239,25 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 btn.style.cssText = 'padding:10px 24px; font-size:1.2rem; cursor:pointer;';
                 btn.onclick = function() {
                     var docElm = document.documentElement;
-                    if (docElm.requestFullscreen) {
-                        docElm.requestFullscreen().catch(e => console.log(e));
-                    } else if (docElm.mozRequestFullScreen) {
-                        docElm.mozRequestFullScreen().catch(e => console.log(e));
-                    } else if (docElm.webkitRequestFullScreen) {
-                        docElm.webkitRequestFullScreen().catch(e => console.log(e));
-                    } else if (docElm.msRequestFullscreen) {
-                        docElm.msRequestFullscreen().catch(e => console.log(e));
+                    try {
+                        if (docElm.requestFullscreen) {
+                            var promise = docElm.requestFullscreen();
+                            if (promise) promise.catch(e => console.log(e));
+                        } else if (docElm.mozRequestFullScreen) {
+                            var promise = docElm.mozRequestFullScreen();
+                            if (promise) promise.catch(e => console.log(e));
+                        } else if (docElm.webkitRequestFullscreen) {
+                            var promise = docElm.webkitRequestFullscreen();
+                            if (promise) promise.catch(e => console.log(e));
+                        } else if (docElm.webkitRequestFullScreen) {
+                            var promise = docElm.webkitRequestFullScreen();
+                            if (promise) promise.catch(e => console.log(e));
+                        } else if (docElm.msRequestFullscreen) {
+                            var promise = docElm.msRequestFullscreen();
+                            if (promise) promise.catch(e => console.log(e));
+                        }
+                    } catch (err) {
+                        console.log("Fullscreen Error:", err);
                     }
                 };
                 overlay.appendChild(btn);
@@ -410,6 +421,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
         },
 
         handleViolation: function(reason) {
+            var self = this;
             this.strikes++;
             this.takeSnapshot('face_violation_' + this.strikes);
             this.takeScreenSnapshot('face_violation_' + this.strikes);
@@ -418,6 +430,14 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 notification.alert('NetraGo Proctoring', 'FINAL WARNING EXCEEDED: ' + reason + '<br>You have been kicked from the activity.', 'OK');
                 
                 setTimeout(function() {
+                    // Kill all media streams before redirect
+                    if (self.stream) {
+                        self.stream.getTracks().forEach(track => track.stop());
+                    }
+                    if (self.screenStream) {
+                        self.screenStream.getTracks().forEach(track => track.stop());
+                    }
+
                     var form = document.getElementById('responseform');
                     if (form) {
                         var input1 = document.createElement('input');
