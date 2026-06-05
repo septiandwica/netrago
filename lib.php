@@ -180,8 +180,19 @@ function local_netrago_extend_navigation(global_navigation $nav) {
     if (has_capability('moodle/course:manageactivities', $context)) {
         $reporturl = new moodle_url('/local/netrago/report.php', ['cmid' => $cmid]);
         $btncss = "<style>.netrago-teacher-btn { display:block; margin: 15px 0; padding: 10px; background:#007bff; color:#fff; text-align:center; border-radius:5px; font-weight:bold; text-decoration:none; }</style>";
-        $CFG->additionalhtmlhead .= $btncss;
-        echo "<a href='{$reporturl}' class='netrago-teacher-btn'><i class='fa fa-shield'></i> View NetraGo Proctoring Report for this Activity</a>";
+        $js = "
+            document.addEventListener('DOMContentLoaded', function() {
+                var btn = document.createElement('a');
+                btn.href = '{$reporturl}';
+                btn.className = 'netrago-teacher-btn';
+                btn.innerHTML = '<i class=\"fa fa-shield\"></i> View NetraGo Proctoring Report for this Activity';
+                var region = document.querySelector('[role=\"main\"]') || document.querySelector('#region-main');
+                if (region) {
+                    region.appendChild(btn);
+                }
+            });
+        ";
+        $CFG->additionalhtmlhead .= $btncss . "<script>{$js}</script>";
         return;
     }
 
