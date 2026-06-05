@@ -125,5 +125,26 @@ function local_netrago_before_footer() {
         'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false)
     ];
 
+    // No-JS Fallback: Hide the main content via CSS.
+    // The proctoring.js will remove this CSS once camera/permissions are granted.
+    $warningmsg = get_string('js_required_warning', 'local_netrago');
+    $css = "
+        <style id='netrago-anti-js-bypass'>
+            #region-main, .region-main, [role='main'] { display: none !important; }
+            .netrago-nojs-warning { 
+                padding: 20px; background: #f8d7da; color: #721c24; 
+                border: 1px solid #f5c6cb; border-radius: 5px; 
+                font-weight: bold; text-align: center; margin: 20px;
+            }
+        </style>
+        <div class='netrago-nojs-warning' id='netrago-nojs-warning'>
+            <i class='fa fa-exclamation-triangle fa-2x mb-2'></i><br>
+            {$warningmsg}
+        </div>
+    ";
+    
+    // We add this to the page header so it renders before the content.
+    $CFG->additionalhtmlhead .= $css;
+
     $PAGE->requires->js_call_amd('local_netrago/proctoring', 'init', [$config]);
 }

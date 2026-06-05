@@ -30,6 +30,10 @@ $string['event_snapshot'] = 'Webcam Snapshot';
 $string['event_tab_switch'] = 'Switched browser tab or minimized window';
 $string['event_fullscreen_exit'] = 'Exited fullscreen mode';
 $string['event_copy_attempt'] = 'Attempted to copy/paste';
+$string['event_focus_loss'] = 'Window lost focus (clicked outside)';
+$string['event_devtools'] = 'Developer Tools (F12) detected';
+$string['event_blocked_key'] = 'Attempted forbidden keyboard shortcut';
+$string['js_required_warning'] = 'You MUST enable JavaScript to view this activity. If you are seeing this message, you are either intentionally disabling JavaScript or using an unsupported browser.';
 
 // Reports.
 $string['viewreports'] = 'View NetraGo Proctoring Reports';

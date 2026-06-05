@@ -19,10 +19,71 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             }
 
             this.monitorTabSwitching();
+            this.monitorFocusLoss();
+            this.blockKeyboardShortcuts();
+            this.detectDevTools();
 
             if (this.config.requirecamera == 1) {
                 this.initCamera();
+            } else {
+                this.unlockPage();
             }
+        },
+
+        unlockPage: function() {
+            var styleNode = document.getElementById('netrago-anti-js-bypass');
+            if (styleNode) styleNode.remove();
+            
+            var warningNode = document.getElementById('netrago-nojs-warning');
+            if (warningNode) warningNode.remove();
+        },
+
+        blockKeyboardShortcuts: function() {
+            var self = this;
+            document.addEventListener('keydown', function(event) {
+                // Block F12
+                if (event.keyCode === 123) {
+                    event.preventDefault();
+                    self.takeSnapshot('blocked_key');
+                    alert("Developer tools are disabled.");
+                }
+                // Block Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+                if (event.ctrlKey && event.shiftKey && (event.keyCode === 73 || event.keyCode === 74 || event.keyCode === 67)) {
+                    event.preventDefault();
+                    self.takeSnapshot('blocked_key');
+                }
+                // Block Ctrl+P (Print)
+                if (event.ctrlKey && event.keyCode === 80) {
+                    event.preventDefault();
+                    self.takeSnapshot('blocked_key');
+                    alert("Printing is disabled.");
+                }
+            });
+        },
+
+        detectDevTools: function() {
+            var self = this;
+            setInterval(function() {
+                var threshold = 160;
+                var widthDiff = window.outerWidth - window.innerWidth > threshold;
+                var heightDiff = window.outerHeight - window.innerHeight > threshold;
+                
+                if (widthDiff || heightDiff) {
+                    // Only log once per minute to avoid spamming if they keep it open
+                    if (!self.devToolsLogged) {
+                        self.devToolsLogged = true;
+                        self.takeSnapshot('devtools');
+                        setTimeout(() => { self.devToolsLogged = false; }, 60000);
+                    }
+                }
+            }, 2000);
+        },
+
+        monitorFocusLoss: function() {
+            var self = this;
+            window.addEventListener('blur', function() {
+                self.takeSnapshot('focus_loss');
+            });
         },
 
         disableCopyPaste: function() {
@@ -104,6 +165,9 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     setTimeout(function() {
                         self.takeSnapshot('snapshot');
                     }, 3000);
+
+                    // Unlock the page since camera is granted
+                    self.unlockPage();
 
                 })
                 .catch(function(err) {
