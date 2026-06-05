@@ -53,15 +53,31 @@ if ($status === 'success') {
     $kyc = new stdClass();
     $kyc->userid = $USER->id;
     $kyc->cmid = $cmid;
-    $kyc->selfiedata = $selfiedata;
-    $kyc->ktpdata = $ktpdata;
-    $kyc->descriptor = $descriptor;
+    
+    if ($selfiedata !== '') {
+        $kyc->selfiedata = $selfiedata;
+    }
+    if ($descriptor !== '') {
+        $kyc->descriptor = $descriptor;
+    }
+    
     $kyc->timeverified = time();
 
     if ($existing) {
         $kyc->id = $existing->id;
+        if ($ktpdata !== '') {
+            $kyc->ktpdata = $ktpdata;
+        }
         $DB->update_record('local_netrago_kyc', $kyc);
     } else {
+        $kyc->ktpdata = $ktpdata;
+        // If ktpdata is empty (using master face), fetch from the master record
+        if ($kyc->ktpdata === '') {
+            $master = $DB->get_record_sql("SELECT * FROM {local_netrago_kyc} WHERE userid = ? ORDER BY timeverified DESC", [$USER->id], IGNORE_MULTIPLE);
+            if ($master) {
+                $kyc->ktpdata = $master->ktpdata;
+            }
+        }
         $DB->insert_record('local_netrago_kyc', $kyc);
     }
 

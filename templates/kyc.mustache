@@ -1,0 +1,86 @@
+<div class="netrago-kyc-wrapper">
+    <div id="kyc-container">
+        
+        <!-- Header -->
+        <div class="kyc-header">
+            <h2><i class="fa fa-shield"></i> Identity Verification (KYC)</h2>
+            <p class="mb-0 mt-1" style="opacity: 0.85;">NetraGo Secure Proctoring System</p>
+        </div>
+
+        <div class="kyc-body">
+            
+            <!-- Step 0: Intro Rules -->
+            <div id="step-intro" class="step active">
+                <i class="fa fa-lock step-icon"></i>
+                <h4>NetraGo Verification Rules</h4>
+                <p class="text-muted">This activity is strictly protected by AI Proctoring. To proceed, you must complete the Identity Verification process:</p>
+                <ul class="rules-list">
+                    <li><i class="fa fa-camera mr-2 text-primary"></i> Allow camera access in your browser.</li>
+                    <li><i class="fa fa-user mr-2 text-primary"></i> Take a clear selfie of your face.</li>
+                    {{^has_master_face}}
+                    <li><i class="fa fa-id-card mr-2 text-primary"></i> Capture a valid ID Card (KTP/KTM) that matches your face.</li>
+                    {{/has_master_face}}
+                    {{#has_master_face}}
+                    <li><i class="fa fa-check-circle mr-2 text-success"></i> Master Face found! You only need to take a quick selfie.</li>
+                    {{/has_master_face}}
+                </ul>
+                <div class="text-center mt-4">
+                    <button id="btn-agree-intro" class="btn btn-primary btn-kyc">I Agree, Start Verification <i class="fa fa-arrow-right ml-2"></i></button>
+                </div>
+            </div>
+
+            <!-- Step Loading Models -->
+            <div id="step-loading" class="step">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+                <h5 class="mt-4 font-weight-bold">Loading AI Engines...</h5>
+                <p class="text-muted">Preparing Face Recognition models. Please wait.</p>
+            </div>
+
+            <!-- Video container (Shared across steps) -->
+            <div id="video-container" class="my-4 mx-auto" style="display:none;">
+                <video id="webcam" autoplay muted playsinline></video>
+            </div>
+
+            <!-- Step 2: Selfie -->
+            <div id="step-selfie" class="step">
+                <h4><i class="fa fa-user-circle text-primary mr-2"></i> Step 1: Take a Selfie</h4>
+                <p class="text-muted">Look directly at the camera. Ensure your face is well-lit and not covered.</p>
+                <button id="btn-selfie" class="btn btn-primary btn-kyc mt-2"><i class="fa fa-camera"></i> Capture Selfie</button>
+            </div>
+
+            {{^has_master_face}}
+            <!-- Step 3: ID Card -->
+            <div id="step-idcard" class="step">
+                <h4><i class="fa fa-id-badge text-primary mr-2"></i> Step 2: Show your ID Card</h4>
+                <p class="text-muted">Hold your ID card (KTP/KTM) in front of the camera so the face on the card is clearly visible to the AI.</p>
+                <button id="btn-idcard" class="btn btn-primary btn-kyc mt-2"><i class="fa fa-search"></i> Capture ID & Verify</button>
+            </div>
+            {{/has_master_face}}
+
+            <!-- Step 4: Processing/Result -->
+            <div id="step-result" class="step">
+                <i id="result-icon" class="fa fa-spinner fa-spin step-icon"></i>
+                <h4 id="result-title">Verifying Identity...</h4>
+                <p id="result-desc" class="text-muted">Comparing your selfie with the ID card.</p>
+                <button id="btn-retry" class="btn btn-danger btn-kyc mt-3" style="display:none;"><i class="fa fa-refresh"></i> Try Again</button>
+            </div>
+
+            <!-- Step 5: Proctoring Rules -->
+            <div id="step-proctoring-rules" class="step">
+                <i class="fa fa-check-circle step-icon text-success"></i>
+                <h4>Verification Successful!</h4>
+                <p class="text-muted">During the activity, you will be closely monitored. <strong>Violations will trigger an Auto-Submit.</strong></p>
+                <ul class="rules-list danger">
+                    <li><i class="fa fa-times-circle mr-2"></i> Do NOT leave full-screen mode.</li>
+                    <li><i class="fa fa-times-circle mr-2"></i> Do NOT switch to other tabs or applications.</li>
+                    <li><i class="fa fa-times-circle mr-2"></i> Your face must remain visible at all times.</li>
+                    <li><i class="fa fa-times-circle mr-2"></i> Copy, Paste, and Text Selection are disabled.</li>
+                </ul>
+                <div class="text-center mt-4">
+                    <a id="btn-continue" href="{{returnurl}}" class="btn btn-success btn-kyc"><i class="fa fa-play-circle"></i> I Understand, Start Activity</a>
+                </div>
+            </div>
+
+        </div> <!-- /.kyc-body -->
+    </div> <!-- /#kyc-container -->
+</div> <!-- /.netrago-kyc-wrapper -->

@@ -8,20 +8,31 @@ define('local_netrago/kyc', ['jquery', 'core/ajax', 'core/notification'], functi
         idCardDescriptor: null,
         idCardDataUrl: null,
 
+        modelsReady: false,
+        startRequested: false,
+
         init: function(config) {
             this.config = config;
             this.videoElement = document.getElementById('webcam');
             this.bindEvents();
+            
+            // Preload models in the background immediately when page loads
+            this.preloadModels();
         },
 
-        loadModels: async function() {
+        preloadModels: async function() {
             try {
                 var modelPath = M.cfg.wwwroot + '/local/netrago/models';
                 await faceapi.nets.ssdMobilenetv1.loadFromUri(modelPath);
                 await faceapi.nets.faceLandmark68Net.loadFromUri(modelPath);
                 await faceapi.nets.faceRecognitionNet.loadFromUri(modelPath);
                 
-                this.startCamera();
+                this.modelsReady = true;
+                
+                // If user already clicked "I Agree" while we were downloading
+                if (this.startRequested) {
+                    this.startCamera();
+                }
             } catch (err) {
                 $('#kyc-status').text('Failed to load AI models. Please check your connection.');
                 console.error(err);
@@ -53,8 +64,15 @@ define('local_netrago/kyc', ['jquery', 'core/ajax', 'core/notification'], functi
             var self = this;
 
             $('#btn-agree-intro').on('click', function() {
-                self.showStep('step-loading');
-                self.loadModels();
+                self.startRequested = true;
+                
+                if (self.modelsReady) {
+                    // Models already downloaded in background! Skip loading screen.
+                    self.startCamera();
+                } else {
+                    // Still downloading, show the loading spinner.
+                    self.showStep('step-loading');
+                }
             });
 
             $('#btn-selfie').on('click', async function() {
@@ -72,8 +90,16 @@ define('local_netrago/kyc', ['jquery', 'core/ajax', 'core/notification'], functi
                 if (detection) {
                     self.selfieDescriptor = detection.descriptor;
                     self.selfieDataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                    self.videoElement.play(); // Unfreeze for ID
-                    self.showStep('step-idcard');
+                    
+                    if (self.config.has_master_face && self.config.master_descriptor) {
+                        // Master face exists, verify directly
+                        self.idCardDescriptor = new Float32Array(JSON.parse(self.config.master_descriptor));
+                        self.verifyMatch();
+                    } else {
+                        // No master face, proceed to ID card capture
+                        self.videoElement.play(); // Unfreeze for ID
+                        self.showStep('step-idcard');
+                    }
                 } else {
                     self.videoElement.play(); // Unfreeze
                     notification.alert('NetraGo Warning', 'Face not detected! Please ensure you are in a well-lit area and looking at the camera.', 'Try Again');
@@ -144,7 +170,7 @@ define('local_netrago/kyc', ['jquery', 'core/ajax', 'core/notification'], functi
                 cmid: this.config.cmid,
                 status: status,
                 selfiedata: status === 'success' ? self.selfieDataUrl : '',
-                ktpdata: status === 'success' ? self.idCardDataUrl : '',
+                ktpdata: status === 'success' && !self.config.has_master_face ? self.idCardDataUrl : '',
                 descriptor: JSON.stringify(descriptorArray),
                 sesskey: M.cfg.sesskey
             }).done(function(response) {

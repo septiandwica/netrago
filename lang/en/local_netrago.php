@@ -20,6 +20,8 @@ $string['disablefocusloss'] = 'Enable Focus Loss Detection';
 $string['disablefocusloss_help'] = 'Detect when a student clicks outside the browser or switches to another application.';
 $string['disabledevtools'] = 'Enable DevTools & Keyboard Blocking';
 $string['disabledevtools_help'] = 'Block F12, Ctrl+P, and other developer shortcuts.';
+$string['requirescreencapture'] = 'Require screen capture';
+$string['requirescreencapture_help'] = 'If enabled, students must share their screen. Snapshots of their screen will be taken when suspicious events occur.';
 
 // Frontend messages.
 $string['setup_required'] = 'Proctoring setup required';
@@ -37,6 +39,7 @@ $string['event_copy_attempt'] = 'Attempted to copy/paste';
 $string['event_focus_loss'] = 'Window lost focus (clicked outside)';
 $string['event_devtools'] = 'Developer Tools (F12) detected';
 $string['event_blocked_key'] = 'Attempted forbidden keyboard shortcut';
+$string['event_screen_snapshot'] = 'Screen Snapshot (Violation)';
 $string['js_required_warning'] = 'You MUST enable JavaScript to view this activity. If you are seeing this message, you are either intentionally disabling JavaScript or using an unsupported browser.';
 
 // Reports.

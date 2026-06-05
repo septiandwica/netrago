@@ -5,6 +5,9 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
         videoElement: null,
         canvasElement: null,
         stream: null,
+        screenVideoElement: null,
+        screenCanvasElement: null,
+        screenStream: null,
         intervalId: null,
         faceLoopId: null,
         baselineDescriptor: null,
@@ -47,15 +50,70 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
             }
 
             var warningText = document.getElementById('netrago-warning-text');
-            if (warningText) {
-                warningText.innerText = "Initializing NetraGo Proctoring...";
-            }
 
-            if (this.config.requirecamera == 1) {
+            if (this.config.requirescreencapture == 1) {
+                var btn = document.getElementById('netrago-start-btn');
+                if (btn) {
+                    btn.style.display = 'inline-block';
+                    if (warningText) {
+                        warningText.innerText = "Please click the button below to share your screen and start the activity.";
+                    }
+                    var self = this;
+                    btn.addEventListener('click', function() {
+                        btn.disabled = true;
+                        btn.innerText = "Requesting Screen Share...";
+                        self.initScreenCapture();
+                    });
+                }
+            } else if (this.config.requirecamera == 1) {
+                if (warningText) {
+                    warningText.innerText = "Initializing NetraGo Proctoring...";
+                }
                 this.initCamera();
             } else {
                 this.unlockPage();
             }
+        },
+
+        initScreenCapture: function() {
+            var self = this;
+            navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+                .then(function(stream) {
+                    self.screenStream = stream;
+                    
+                    self.screenVideoElement = document.createElement('video');
+                    self.screenVideoElement.autoplay = true;
+                    self.screenVideoElement.style.display = 'none';
+                    self.screenVideoElement.srcObject = stream;
+                    document.body.appendChild(self.screenVideoElement);
+
+                    self.screenCanvasElement = document.createElement('canvas');
+                    self.screenCanvasElement.style.display = 'none';
+                    document.body.appendChild(self.screenCanvasElement);
+
+                    stream.getVideoTracks()[0].addEventListener('ended', () => {
+                        self.handleViolation('Screen sharing was stopped.');
+                    });
+
+                    if (self.config.requirecamera == 1) {
+                        self.initCamera();
+                    } else {
+                        self.unlockPage();
+                    }
+                })
+                .catch(function(err) {
+                    var warningText = document.getElementById('netrago-warning-text');
+                    var btn = document.getElementById('netrago-start-btn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = "<i class='fa fa-desktop'></i> Start Activity & Share Screen";
+                    }
+                    if (warningText) {
+                        warningText.innerText = "Screen sharing access is required to proceed. Please allow screen sharing. (" + err.message + ")";
+                    } else {
+                        notification.alert('NetraGo Warning', 'Screen sharing is required to proceed. ' + err.message, 'OK');
+                    }
+                });
         },
 
         unlockPage: function() {
@@ -73,17 +131,20 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 if (event.keyCode === 123) {
                     event.preventDefault();
                     self.takeSnapshot('blocked_key');
+                    self.takeScreenSnapshot('blocked_key');
                     notification.alert('NetraGo Warning', 'Developer tools are disabled.', 'I Understand');
                 }
                 // Block Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
                 if (event.ctrlKey && event.shiftKey && (event.keyCode === 73 || event.keyCode === 74 || event.keyCode === 67)) {
                     event.preventDefault();
                     self.takeSnapshot('blocked_key');
+                    self.takeScreenSnapshot('blocked_key');
                 }
                 // Block Ctrl+P (Print)
                 if (event.ctrlKey && event.keyCode === 80) {
                     event.preventDefault();
                     self.takeSnapshot('blocked_key');
+                    self.takeScreenSnapshot('blocked_key');
                     notification.alert('NetraGo Warning', 'Printing is disabled.', 'I Understand');
                 }
             });
@@ -101,6 +162,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                     if (!self.devToolsLogged) {
                         self.devToolsLogged = true;
                         self.takeSnapshot('devtools');
+                        self.takeScreenSnapshot('devtools');
                         setTimeout(() => { self.devToolsLogged = false; }, 60000);
                     }
                 }
@@ -111,6 +173,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
             var self = this;
             window.addEventListener('blur', function() {
                 self.takeSnapshot('focus_loss');
+                self.takeScreenSnapshot('focus_loss');
             });
         },
 
@@ -160,6 +223,9 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                     // If camera is enabled, take a snapshot immediately upon suspicious event
                     if (self.config.requirecamera == 1 && self.videoElement) {
                         self.takeSnapshot('tab_switch_snapshot');
+                    }
+                    if (self.config.requirescreencapture == 1 && self.screenVideoElement) {
+                        self.takeScreenSnapshot('tab_switch_snapshot');
                     }
                 }
             });
@@ -253,6 +319,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
         handleViolation: function(reason) {
             this.strikes++;
             this.takeSnapshot('face_violation_' + this.strikes);
+            this.takeScreenSnapshot('face_violation_' + this.strikes);
             
             if (this.strikes >= 3) {
                 notification.alert('NetraGo Proctoring', 'FINAL WARNING EXCEEDED: ' + reason + '<br>You have been kicked from the activity.', 'OK');
@@ -299,6 +366,25 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
             var dataUrl = this.canvasElement.toDataURL('image/jpeg', 0.5);
             
             this.logEvent(eventType, dataUrl);
+        },
+
+        takeScreenSnapshot: function(eventType) {
+            if (!this.screenVideoElement || !this.screenStream) return;
+            
+            var video = this.screenVideoElement;
+            var canvas = this.screenCanvasElement;
+            
+            if (video.videoWidth === 0 || video.videoHeight === 0) return;
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            var ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Further reduce quality for screen captures to avoid massive payload sizes
+            var dataUrl = canvas.toDataURL('image/jpeg', 0.3);
+            this.logEvent(eventType + '_screen', dataUrl);
         },
 
         logEvent: function(eventType, imageData = '') {

@@ -37,6 +37,13 @@ if ($hassiteconfig) {
     ));
 
     $settings->add(new admin_setting_configcheckbox(
+        'local_netrago/allow_screencapture',
+        'Allow Screen Capture',
+        'Allow teachers to require screen sharing and take snapshots of the user\'s screen upon violations.',
+        1
+    ));
+
+    $settings->add(new admin_setting_configcheckbox(
         'local_netrago/allow_copypaste',
         'Allow Anti Copy-Paste',
         'Allow teachers to disable copy, paste, and text selection during activities.',

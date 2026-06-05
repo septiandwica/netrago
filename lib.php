@@ -37,6 +37,12 @@ function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
         $mform->setDefault('netrago_requirefullscreen', 0);
     }
 
+    if (get_config('local_netrago', 'allow_screencapture')) {
+        $mform->addElement('selectyesno', 'netrago_requirescreencapture', get_string('requirescreencapture', 'local_netrago'));
+        $mform->addHelpButton('netrago_requirescreencapture', 'requirescreencapture', 'local_netrago');
+        $mform->setDefault('netrago_requirescreencapture', 0);
+    }
+
     if (get_config('local_netrago', 'allow_copypaste')) {
         $mform->addElement('selectyesno', 'netrago_disablecopypaste', get_string('disablecopypaste', 'local_netrago'));
         $mform->addHelpButton('netrago_disablecopypaste', 'disablecopypaste', 'local_netrago');
@@ -62,6 +68,7 @@ function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
         if ($settings) {
             $mform->setDefault('netrago_requirecamera', $settings->requirecamera);
             $mform->setDefault('netrago_requirefullscreen', $settings->requirefullscreen);
+            $mform->setDefault('netrago_requirescreencapture', $settings->requirescreencapture ?? 0);
             $mform->setDefault('netrago_disablecopypaste', $settings->disablecopypaste);
             $mform->setDefault('netrago_disablefocusloss', $settings->disablefocusloss ?? 0);
             $mform->setDefault('netrago_disabledevtools', $settings->disabledevtools ?? 0);
@@ -88,15 +95,17 @@ function local_netrago_coursemodule_edit_post_actions($data, $course) {
 
     $requirecamera = isset($data->netrago_requirecamera) ? $data->netrago_requirecamera : 0;
     $requirefullscreen = isset($data->netrago_requirefullscreen) ? $data->netrago_requirefullscreen : 0;
+    $requirescreencapture = isset($data->netrago_requirescreencapture) ? $data->netrago_requirescreencapture : 0;
     $disablecopypaste = isset($data->netrago_disablecopypaste) ? $data->netrago_disablecopypaste : 0;
     $disablefocusloss = isset($data->netrago_disablefocusloss) ? $data->netrago_disablefocusloss : 0;
     $disabledevtools = isset($data->netrago_disabledevtools) ? $data->netrago_disabledevtools : 0;
 
-    if ($requirecamera || $requirefullscreen || $disablecopypaste || $disablefocusloss || $disabledevtools) {
+    if ($requirecamera || $requirefullscreen || $requirescreencapture || $disablecopypaste || $disablefocusloss || $disabledevtools) {
         $record = new stdClass();
         $record->cmid = $cmid;
         $record->requirecamera = $requirecamera;
         $record->requirefullscreen = $requirefullscreen;
+        $record->requirescreencapture = $requirescreencapture;
         $record->disablecopypaste = $disablecopypaste;
         $record->disablefocusloss = $disablefocusloss;
         $record->disabledevtools = $disabledevtools;
@@ -170,7 +179,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         return;
     }
 
-    if (!$settings->requirecamera && !$settings->requirefullscreen && !$settings->disablecopypaste && !$settings->disablefocusloss && !$settings->disabledevtools) {
+    if (!$settings->requirecamera && !$settings->requirefullscreen && !($settings->requirescreencapture ?? 0) && !$settings->disablecopypaste && !$settings->disablefocusloss && !$settings->disabledevtools) {
         return;
     }
 
@@ -228,6 +237,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         'userid' => $USER->id,
         'requirecamera' => get_config('local_netrago', 'allow_camera') ? $settings->requirecamera : 0,
         'requirefullscreen' => get_config('local_netrago', 'allow_fullscreen') ? $settings->requirefullscreen : 0,
+        'requirescreencapture' => get_config('local_netrago', 'allow_screencapture') ? ($settings->requirescreencapture ?? 0) : 0,
         'disablecopypaste' => get_config('local_netrago', 'allow_copypaste') ? $settings->disablecopypaste : 0,
         'allow_focusloss' => get_config('local_netrago', 'allow_focusloss') ? $settings->disablefocusloss : 0,
         'allow_devtools' => get_config('local_netrago', 'allow_devtools') ? $settings->disabledevtools : 0,
@@ -249,7 +259,8 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         </style>
         <div class='netrago-nojs-warning' id='netrago-nojs-warning'>
             <i class='fa fa-exclamation-triangle fa-2x mb-2'></i><br>
-            {$warningmsg}
+            <span id='netrago-warning-text'>{$warningmsg}</span><br>
+            <button id='netrago-start-btn' class='btn btn-primary mt-3' style='display:none;'><i class='fa fa-desktop'></i> Start Activity & Share Screen</button>
         </div>
     ";
     

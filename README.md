@@ -51,3 +51,7 @@ NetraGo is entirely **Self-Hosted** and **Serverless AI**. The AI facial recogni
 
 ## License
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation.
+
+## Development & Support
+
+Developed and maintained by [Tateta](https://samastanuswantara.com) and [Septian Dwi Cahyo](https://github.com/septiandwica).
