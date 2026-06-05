@@ -121,8 +121,12 @@ function local_netrago_coursemodule_edit_post_actions($data, $course) {
 function local_netrago_extend_navigation(global_navigation $nav) {
     global $PAGE, $USER, $DB, $CFG;
 
-    // Check global enable
-    if (!get_config('local_netrago', 'enable_plugin')) {
+    // Check global enable (default to 1 if not set in db yet)
+    $enabled = get_config('local_netrago', 'enable_plugin');
+    if ($enabled === false) {
+        $enabled = 1;
+    }
+    if (!$enabled) {
         return;
     }
 
