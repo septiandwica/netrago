@@ -116,8 +116,9 @@ function local_netrago_coursemodule_edit_post_actions($data, $course) {
 
 /**
  * Injects NetraGo Proctoring Javascript on relevant activity pages.
+ * We use extend_navigation as it is a standard Moodle callback that runs on every page.
  */
-function local_netrago_before_footer() {
+function local_netrago_extend_navigation(global_navigation $nav) {
     global $PAGE, $USER, $DB, $CFG;
 
     // Check global enable
