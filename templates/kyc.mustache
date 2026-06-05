@@ -15,14 +15,16 @@
                 <h4>NetraGo Verification Rules</h4>
                 <p class="text-muted">This activity is strictly protected by AI Proctoring. To proceed, you must complete the Identity Verification process:</p>
                 <ul class="rules-list">
+                    {{#requirecamera}}
                     <li><i class="fa fa-camera mr-2 text-primary"></i> Allow camera access in your browser.</li>
                     <li><i class="fa fa-user mr-2 text-primary"></i> Take a clear selfie of your face.</li>
                     {{^has_master_face}}
-                    <li><i class="fa fa-id-card mr-2 text-primary"></i> Capture a valid ID Card (KTP/KTM) that matches your face.</li>
+                    <li><i class="fa fa-id-card mr-2 text-primary"></i> Capture an Official ID Card with Face (KTP/KTM/SIM/Passport) that matches your face.</li>
                     {{/has_master_face}}
                     {{#has_master_face}}
                     <li><i class="fa fa-check-circle mr-2 text-success"></i> Master Face found! You only need to take a quick selfie.</li>
                     {{/has_master_face}}
+                    {{/requirecamera}}
                 </ul>
                 <div class="text-center mt-4">
                     <button id="btn-agree-intro" class="btn btn-primary btn-kyc">I Agree, Start Verification <i class="fa fa-arrow-right ml-2"></i></button>
@@ -51,8 +53,8 @@
             {{^has_master_face}}
             <!-- Step 3: ID Card -->
             <div id="step-idcard" class="step">
-                <h4><i class="fa fa-id-badge text-primary mr-2"></i> Step 2: Show your ID Card</h4>
-                <p class="text-muted">Hold your ID card (KTP/KTM) in front of the camera so the face on the card is clearly visible to the AI.</p>
+                <h4><i class="fa fa-id-badge text-primary mr-2"></i> Step 2: Show your Official ID Card</h4>
+                <p class="text-muted">Hold your Official ID Card with Face (KTP/KTM/SIM/Passport) in front of the camera so the face on the card is clearly visible to the AI.</p>
                 <button id="btn-idcard" class="btn btn-primary btn-kyc mt-2"><i class="fa fa-search"></i> Capture ID & Verify</button>
             </div>
             {{/has_master_face}}
@@ -71,10 +73,11 @@
                 <h4>Verification Successful!</h4>
                 <p class="text-muted">During the activity, you will be closely monitored. <strong>Violations will trigger an Auto-Submit.</strong></p>
                 <ul class="rules-list danger">
-                    <li><i class="fa fa-times-circle mr-2"></i> Do NOT leave full-screen mode.</li>
-                    <li><i class="fa fa-times-circle mr-2"></i> Do NOT switch to other tabs or applications.</li>
-                    <li><i class="fa fa-times-circle mr-2"></i> Your face must remain visible at all times.</li>
-                    <li><i class="fa fa-times-circle mr-2"></i> Copy, Paste, and Text Selection are disabled.</li>
+                    {{#requirefullscreen}}<li><i class="fa fa-times-circle mr-2"></i> Do NOT leave full-screen mode.</li>{{/requirefullscreen}}
+                    {{#disablefocusloss}}<li><i class="fa fa-times-circle mr-2"></i> Do NOT switch to other tabs or applications.</li>{{/disablefocusloss}}
+                    {{#requirecamera}}<li><i class="fa fa-times-circle mr-2"></i> Your face must remain visible at all times.</li>{{/requirecamera}}
+                    {{#requirescreencapture}}<li><i class="fa fa-times-circle mr-2"></i> Your screen will be recorded upon suspicious activity.</li>{{/requirescreencapture}}
+                    {{#disablecopypaste}}<li><i class="fa fa-times-circle mr-2"></i> Copy, Paste, and Text Selection are disabled.</li>{{/disablecopypaste}}
                 </ul>
                 <div class="text-center mt-4">
                     <a id="btn-continue" href="{{returnurl}}" class="btn btn-success btn-kyc"><i class="fa fa-play-circle"></i> I Understand, Start Activity</a>

@@ -48,9 +48,16 @@ $master_face = $DB->get_record_sql("SELECT * FROM {local_netrago_kyc} WHERE user
 $has_master_face = $master_face ? true : false;
 $master_descriptor = $master_face ? $master_face->descriptor : '';
 
+$settings = $DB->get_record('local_netrago', ['cmid' => $cmid]);
+
 $templatedata = [
     'returnurl' => $finalreturnurl,
-    'has_master_face' => $has_master_face
+    'has_master_face' => $has_master_face,
+    'requirecamera' => get_config('local_netrago', 'allow_camera') ? ($settings->requirecamera ?? 0) : 0,
+    'requirefullscreen' => get_config('local_netrago', 'allow_fullscreen') ? ($settings->requirefullscreen ?? 0) : 0,
+    'requirescreencapture' => get_config('local_netrago', 'allow_screencapture') ? ($settings->requirescreencapture ?? 0) : 0,
+    'disablecopypaste' => get_config('local_netrago', 'allow_copypaste') ? ($settings->disablecopypaste ?? 0) : 0,
+    'disablefocusloss' => get_config('local_netrago', 'allow_focusloss') ? ($settings->disablefocusloss ?? 0) : 0
 ];
 
 echo $OUTPUT->header();

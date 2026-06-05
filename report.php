@@ -154,7 +154,7 @@ if ($userid == 0) {
         echo html_writer::end_tag('div');
         
         echo html_writer::start_tag('div', ['class' => 'col-md-6 text-center']);
-        echo html_writer::tag('h5', 'ID Card (KTP/KTM)');
+        echo html_writer::tag('h5', 'Official ID Card (KTP/KTM/SIM)');
         echo html_writer::tag('img', '', ['src' => $kyc->ktpdata, 'class' => 'kyc-img shadow-sm']);
         echo html_writer::end_tag('div');
         

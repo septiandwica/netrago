@@ -167,7 +167,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         $urlpath = $_SERVER['REQUEST_URI'];
     }
     
-    if (strpos($urlpath, '/mod/') === false || strpos($urlpath, 'edit') !== false) {
+    if (strpos($urlpath, '/mod/') === false || strpos($urlpath, 'edit') !== false || strpos($urlpath, 'review.php') !== false) {
         return;
     }
 
@@ -256,6 +256,27 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false),
         'descriptor' => $descriptor_to_use
     ];
+
+    // Auto-attempt quiz if navigating from KYC or bypassing
+    if (strpos($urlpath, '/mod/quiz/view.php') !== false) {
+        $auto_start_js = "
+            document.addEventListener('DOMContentLoaded', function() {
+                var forms = document.querySelectorAll('form[action*=\"startattempt.php\"]');
+                if (forms.length > 0) {
+                    var btn = forms[0].querySelector('button[type=\"submit\"], input[type=\"submit\"]');
+                    if (btn) {
+                        // Create a temporary overlay so they don't see the page flash
+                        var overlay = document.createElement('div');
+                        overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f4f6f9; z-index:9999999; display:flex; align-items:center; justify-content:center; flex-direction:column;';
+                        overlay.innerHTML = '<div class=\"spinner-border text-primary\" style=\"width: 3rem; height: 3rem;\" role=\"status\"></div><h4 class=\"mt-3\">Starting Activity...</h4>';
+                        document.body.appendChild(overlay);
+                        btn.click();
+                    }
+                }
+            });
+        ";
+        $CFG->additionalhtmlhead .= "<script>{$auto_start_js}</script>";
+    }
 
     // No-JS Fallback: Hide the main content via CSS.
     // The proctoring.js will remove this CSS once camera/permissions are granted.

@@ -131,6 +131,17 @@ define('local_netrago/kyc', ['jquery', 'core/ajax', 'core/notification'], functi
                 var detection = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
                 
                 if (detection) {
+                    var faceArea = detection.detection.box.width * detection.detection.box.height;
+                    var canvasArea = canvas.width * canvas.height;
+                    var ratio = faceArea / canvasArea;
+
+                    if (ratio > 0.15) {
+                        self.videoElement.play(); // Unfreeze
+                        notification.alert('NetraGo Warning', 'Wajah di kamera terlalu besar. Harap tunjukkan Kartu Identitas Resmi (KTP/KTM/SIM), BUKAN wajah Anda secara langsung.', 'Try Again');
+                        btn.prop('disabled', false).text('Capture ID & Verify');
+                        return;
+                    }
+
                     self.idCardDescriptor = detection.descriptor;
                     self.idCardDataUrl = canvas.toDataURL('image/jpeg', 0.6);
                     self.verifyMatch();
