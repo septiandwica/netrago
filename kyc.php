@@ -23,6 +23,7 @@ $PAGE->set_context($context);
 $PAGE->set_cm($cm, $course);
 $PAGE->set_title('NetraGo KYC Onboarding');
 $PAGE->set_heading($course->fullname);
+$PAGE->set_pagelayout('standard');
 
 // Check if rate limited
 $thirty_mins_ago = time() - (30 * 60);
