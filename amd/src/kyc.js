@@ -1,4 +1,4 @@
-define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
+define('local_netrago/kyc', ['jquery', 'core/ajax', 'core/notification'], function($, ajax, notification) {
 
     var NetraGoKYC = {
         config: null,
@@ -25,6 +25,7 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
             } catch (err) {
                 $('#kyc-status').text('Failed to load AI models. Please check your connection.');
                 console.error(err);
+                notification.alert('NetraGo Error', 'Failed to load AI models. Please ensure your internet connection is stable.', 'OK');
             }
         },
 
@@ -39,6 +40,7 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
                 })
                 .catch(function(err) {
                     $('#kyc-status').text("Camera access is required. " + err.message);
+                    notification.alert('NetraGo Error', 'Camera access is required for identity verification. Please allow camera access in your browser settings and reload the page.', 'OK');
                 });
         },
 
@@ -74,7 +76,7 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
                     self.showStep('step-idcard');
                 } else {
                     self.videoElement.play(); // Unfreeze
-                    alert("Face not detected! Please ensure you are in a well-lit area and looking at the camera.");
+                    notification.alert('NetraGo Warning', 'Face not detected! Please ensure you are in a well-lit area and looking at the camera.', 'Try Again');
                     btn.prop('disabled', false).text('Capture Selfie');
                 }
             });
@@ -97,7 +99,7 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
                     self.verifyMatch();
                 } else {
                     self.videoElement.play(); // Unfreeze
-                    alert("Face on ID Card not detected! Please hold it closer to the camera and ensure there is no glare.");
+                    notification.alert('NetraGo Warning', 'Face on ID Card not detected! Please hold it closer to the camera and ensure there is no glare.', 'Try Again');
                     btn.prop('disabled', false).text('Capture ID & Verify');
                 }
             });

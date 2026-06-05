@@ -64,7 +64,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 if (event.keyCode === 123) {
                     event.preventDefault();
                     self.takeSnapshot('blocked_key');
-                    alert("Developer tools are disabled.");
+                    notification.alert('NetraGo Warning', 'Developer tools are disabled.', 'I Understand');
                 }
                 // Block Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
                 if (event.ctrlKey && event.shiftKey && (event.keyCode === 73 || event.keyCode === 74 || event.keyCode === 67)) {
@@ -75,7 +75,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 if (event.ctrlKey && event.keyCode === 80) {
                     event.preventDefault();
                     self.takeSnapshot('blocked_key');
-                    alert("Printing is disabled.");
+                    notification.alert('NetraGo Warning', 'Printing is disabled.', 'I Understand');
                 }
             });
         },
@@ -137,7 +137,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 if (!document.fullscreenElement) {
                     // Log exit fullscreen
                     self.logEvent('fullscreen_exit');
-                    alert("NetraGo: You must remain in Fullscreen mode! Exiting fullscreen has been logged.");
+                    notification.alert('NetraGo Warning', 'You must remain in Fullscreen mode! Exiting fullscreen has been logged.', 'I Understand');
                 }
             });
         },
@@ -210,7 +210,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                     if (warningText) {
                         warningText.innerText = "Camera access is denied or not available. Please allow camera access in your browser settings and refresh the page. (" + err.message + ")";
                     } else {
-                        alert("NetraGo: Camera access is required to proceed. " + err.message);
+                        notification.alert('NetraGo Warning', 'Camera access is required to proceed. ' + err.message, 'OK');
                     }
                 });
         },
@@ -246,13 +246,37 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
             this.takeSnapshot('face_violation_' + this.strikes);
             
             if (this.strikes >= 3) {
-                alert("FINAL WARNING EXCEEDED: " + reason + "\nYou have been kicked from the activity.");
-                window.location.href = M.cfg.wwwroot + '/course/view.php?id=' + M.cfg.courseId; // Kick to course
+                notification.alert('NetraGo Proctoring', 'FINAL WARNING EXCEEDED: ' + reason + '<br>You have been kicked from the activity.', 'OK');
+                
+                setTimeout(function() {
+                    var form = document.getElementById('responseform');
+                    if (form) {
+                        var input1 = document.createElement('input');
+                        input1.type = 'hidden';
+                        input1.name = 'finishattempt';
+                        input1.value = '1';
+                        form.appendChild(input1);
+                        
+                        var input2 = document.createElement('input');
+                        input2.type = 'hidden';
+                        input2.name = 'timeup';
+                        input2.value = '1';
+                        form.appendChild(input2);
+                        
+                        window.onbeforeunload = null;
+                        form.submit();
+                    } else {
+                        window.onbeforeunload = null;
+                        window.location.href = M.cfg.wwwroot + '/course/view.php?id=' + M.cfg.courseId;
+                    }
+                }, 3000);
             } else {
                 // Obscure screen with blur
                 document.body.style.filter = 'blur(10px)';
-                alert("WARNING " + this.strikes + "/3: " + reason + "\nPlease look at the camera immediately.");
-                document.body.style.filter = 'none';
+                notification.alert('NetraGo Warning', 'WARNING ' + this.strikes + '/3: ' + reason + '<br>Please look at the camera immediately.', 'I Understand');
+                setTimeout(function() {
+                    document.body.style.filter = 'none';
+                }, 3000);
             }
         },
 
