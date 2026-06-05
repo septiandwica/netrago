@@ -125,8 +125,8 @@ function local_netrago_before_footer() {
         return;
     }
 
-    // Ignore if not logged in or is guest or site admin
-    if (!isloggedin() || isguestuser() || is_siteadmin()) {
+    // Ignore if not logged in or is guest
+    if (!isloggedin() || isguestuser()) {
         return;
     }
 
@@ -136,6 +136,13 @@ function local_netrago_before_footer() {
     }
 
     $cmid = $PAGE->cm->id;
+    $context = context_module::instance($cmid);
+
+    // Do not proctor users who can manage activities (Teachers/Admins).
+    // This allows them to test the plugin by using the "Switch role to... Student" feature.
+    if (has_capability('moodle/course:manageactivities', $context)) {
+        return;
+    }
 
     // Check if this module has NetraGo enabled.
     $settings = $DB->get_record('local_netrago', ['cmid' => $cmid]);
