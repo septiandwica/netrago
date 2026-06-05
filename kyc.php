@@ -112,7 +112,9 @@ echo html_writer::tag('li', 'Your face must remain visible to the camera at all 
 echo html_writer::tag('li', 'Copy, Paste, and Text Selection are disabled.');
 echo html_writer::end_tag('ul');
 echo html_writer::tag('p', 'Any violations will be recorded and may result in an automatic failure or being locked out.');
-echo html_writer::tag('div', html_writer::tag('a', 'I Understand, Start Activity', ['id' => 'btn-continue', 'href' => $returnurl ? $returnurl : new moodle_url('/mod/assign/view.php', ['id' => $cmid]), 'class' => 'btn btn-success']), ['class' => 'text-center mt-3']);
+
+$fallbackurl = new moodle_url('/mod/' . $cm->modname . '/view.php', ['id' => $cmid]);
+echo html_writer::tag('div', html_writer::tag('a', 'I Understand, Start Activity', ['id' => 'btn-continue', 'href' => $returnurl ? $returnurl : $fallbackurl, 'class' => 'btn btn-success']), ['class' => 'text-center mt-3']);
 echo html_writer::end_tag('div');
 
 echo html_writer::end_tag('div'); // kyc-container
