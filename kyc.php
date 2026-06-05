@@ -56,8 +56,21 @@ echo html_writer::start_tag('div', ['id' => 'kyc-container', 'class' => 'card p-
 echo html_writer::tag('h2', 'Identity Verification (KYC)', ['class' => 'mb-3']);
 echo html_writer::tag('p', 'This activity requires identity verification. Please prepare your ID Card (KTP/KTM).', ['id' => 'kyc-status', 'class' => 'text-muted']);
 
-// Step 1: Model Loading
-echo html_writer::start_tag('div', ['id' => 'step-loading', 'class' => 'step active']);
+// Step 0: Intro Rules
+echo html_writer::start_tag('div', ['id' => 'step-intro', 'class' => 'step active text-start']);
+echo html_writer::tag('h4', 'NetraGo Verification Rules');
+echo html_writer::tag('p', 'This activity is protected by NetraGo Proctoring. To proceed, you must:');
+echo html_writer::start_tag('ul', ['class' => 'text-start']);
+echo html_writer::tag('li', 'Allow camera access in your browser.');
+echo html_writer::tag('li', 'Take a clear selfie of your face.');
+echo html_writer::tag('li', 'Capture a valid ID Card (KTP/KTM/Driver License) that matches your face.');
+echo html_writer::end_tag('ul');
+echo html_writer::tag('p', 'By clicking the button below, you agree to these rules and consent to identity verification.');
+echo html_writer::tag('div', html_writer::tag('button', 'I Agree, Start Verification', ['id' => 'btn-agree-intro', 'class' => 'btn btn-primary']), ['class' => 'text-center mt-3']);
+echo html_writer::end_tag('div');
+
+// Step Loading Models
+echo html_writer::start_tag('div', ['id' => 'step-loading', 'class' => 'step']);
 echo html_writer::tag('div', '', ['class' => 'spinner-border text-primary', 'role' => 'status']);
 echo html_writer::tag('p', 'Loading AI Models... Please wait.', ['class' => 'mt-2']);
 echo html_writer::end_tag('div');
@@ -86,7 +99,20 @@ echo html_writer::start_tag('div', ['id' => 'step-result', 'class' => 'step']);
 echo html_writer::tag('h4', 'Verifying...', ['id' => 'result-title']);
 echo html_writer::tag('p', '', ['id' => 'result-desc']);
 echo html_writer::tag('button', 'Try Again', ['id' => 'btn-retry', 'class' => 'btn btn-secondary mt-2', 'style' => 'display:none;']);
-echo html_writer::tag('a', 'Continue to Activity', ['id' => 'btn-continue', 'href' => $returnurl ? $returnurl : new moodle_url('/mod/assign/view.php', ['id' => $cmid]), 'class' => 'btn btn-success mt-2', 'style' => 'display:none;']);
+echo html_writer::end_tag('div');
+
+// Step 5: Proctoring Rules
+echo html_writer::start_tag('div', ['id' => 'step-proctoring-rules', 'class' => 'step text-start']);
+echo html_writer::tag('h4', 'Proctoring Rules');
+echo html_writer::tag('p', 'Identity verification successful. During the activity, you are closely monitored. Please adhere to the following rules:');
+echo html_writer::start_tag('ul', ['class' => 'text-start text-danger fw-bold']);
+echo html_writer::tag('li', 'Do NOT leave full-screen mode.');
+echo html_writer::tag('li', 'Do NOT switch to other tabs or applications.');
+echo html_writer::tag('li', 'Your face must remain visible to the camera at all times.');
+echo html_writer::tag('li', 'Copy, Paste, and Text Selection are disabled.');
+echo html_writer::end_tag('ul');
+echo html_writer::tag('p', 'Any violations will be recorded and may result in an automatic failure or being locked out.');
+echo html_writer::tag('div', html_writer::tag('a', 'I Understand, Start Activity', ['id' => 'btn-continue', 'href' => $returnurl ? $returnurl : new moodle_url('/mod/assign/view.php', ['id' => $cmid]), 'class' => 'btn btn-success']), ['class' => 'text-center mt-3']);
 echo html_writer::end_tag('div');
 
 echo html_writer::end_tag('div'); // kyc-container

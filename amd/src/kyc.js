@@ -11,7 +11,6 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
         init: function(config) {
             this.config = config;
             this.videoElement = document.getElementById('webcam');
-            this.loadModels();
             this.bindEvents();
         },
 
@@ -51,9 +50,15 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
         bindEvents: function() {
             var self = this;
 
+            $('#btn-agree-intro').on('click', function() {
+                self.showStep('step-loading');
+                self.loadModels();
+            });
+
             $('#btn-selfie').on('click', async function() {
                 var btn = $(this);
                 btn.prop('disabled', true).text('Detecting face...');
+                self.videoElement.pause(); // Freeze video
                 
                 var canvas = document.createElement('canvas');
                 canvas.width = self.videoElement.videoWidth;
@@ -65,8 +70,10 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
                 if (detection) {
                     self.selfieDescriptor = detection.descriptor;
                     self.selfieDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    self.videoElement.play(); // Unfreeze for ID
                     self.showStep('step-idcard');
                 } else {
+                    self.videoElement.play(); // Unfreeze
                     alert("Face not detected! Please ensure you are in a well-lit area and looking at the camera.");
                     btn.prop('disabled', false).text('Capture Selfie');
                 }
@@ -75,6 +82,7 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
             $('#btn-idcard').on('click', async function() {
                 var btn = $(this);
                 btn.prop('disabled', true).text('Verifying ID Card...');
+                self.videoElement.pause(); // Freeze video
                 
                 var canvas = document.createElement('canvas');
                 canvas.width = self.videoElement.videoWidth;
@@ -88,17 +96,18 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
                     self.idCardDataUrl = canvas.toDataURL('image/jpeg', 0.6);
                     self.verifyMatch();
                 } else {
+                    self.videoElement.play(); // Unfreeze
                     alert("Face on ID Card not detected! Please hold it closer to the camera and ensure there is no glare.");
                     btn.prop('disabled', false).text('Capture ID & Verify');
                 }
             });
 
             $('#btn-retry').on('click', function() {
+                self.videoElement.play(); // Unfreeze video on retry
                 self.showStep('step-selfie');
                 $('#btn-selfie').prop('disabled', false).text('Capture Selfie');
                 $('#btn-idcard').prop('disabled', false).text('Capture ID & Verify');
                 $('#btn-retry').hide();
-                $('#btn-continue').hide();
             });
         },
 
@@ -135,8 +144,9 @@ define('local_netrago/kyc', ['jquery', 'core/ajax'], function($) {
                 if (res.success) {
                     if (status === 'success') {
                         $('#result-title').text('Verification Successful!');
-                        $('#result-desc').text('Your identity has been verified. You may now start the activity.');
-                        $('#btn-continue').show();
+                        $('#result-desc').text('Your identity has been verified.');
+                        $('#video-container').hide();
+                        self.showStep('step-proctoring-rules');
                     } else {
                         $('#result-title').text('Verification Failed').addClass('text-danger');
                         $('#result-desc').text('The face on the ID card does not match the selfie. Please try again.');
