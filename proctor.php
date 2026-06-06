@@ -104,7 +104,13 @@ $css = "
 ";
 $CFG->additionalhtmlhead .= $css;
 
-$PAGE->requires->js(new moodle_url('/local/netrago/amd/src/face-api.min.js'));
+$faceapi_url = new moodle_url('/local/netrago/amd/src/face-api.min.js');
+$js_injection = "
+<script>var _temp_define = window.define; window.define = undefined;</script>
+<script src=\"{$faceapi_url}\"></script>
+<script>window.define = _temp_define;</script>
+";
+$CFG->additionalhtmlhead .= $js_injection;
 $PAGE->requires->js_call_amd('local_netrago/proctoring', 'init', [$config]);
 
 echo $OUTPUT->header();
