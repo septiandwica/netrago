@@ -219,7 +219,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         $urlpath = $_SERVER['REQUEST_URI'];
     }
     
-    if (strpos($urlpath, '/mod/') === false || strpos($urlpath, 'edit') !== false || strpos($urlpath, 'review.php') !== false) {
+    if (strpos($urlpath, '/mod/') === false || strpos($urlpath, 'edit') !== false) {
         return;
     }
 
@@ -295,9 +295,39 @@ function local_netrago_extend_navigation(global_navigation $nav) {
 
     $descriptor_to_use = $kyc ? $kyc->descriptor : ($master_descriptor ? $master_descriptor : null);
 
+    // Get current strikes for persistent tracking
+    $violation_count = $DB->count_records_select('local_netrago_logs', 
+        "userid = ? AND cmid = ? AND (eventtype LIKE '%violation%' OR eventtype LIKE '%focus_loss%' OR eventtype LIKE '%tab_switch%')", 
+        [$USER->id, $cmid]);
+
+    // iFrame breakout for non-attempt pages (e.g. view.php, review.php, summary.php)
+    if (strpos($urlpath, 'attempt.php') === false && strpos($urlpath, 'proctor.php') === false) {
+        $js = "
+            if (window !== window.top) {
+                window.top.location.href = window.location.href; // Break out of iframe!
+            }
+        ";
+        $CFG->additionalhtmlhead .= "<script>{$js}</script>";
+        return; // Do not load proctoring on view/review pages!
+    }
+    
+    // Redirect attempt.php to proctor.php if NOT inside iframe
+    if (strpos($urlpath, 'attempt.php') !== false) {
+        $proctor_url = (new moodle_url('/local/netrago/proctor.php', ['cmid' => $cmid]))->out(false);
+        $js = "
+            if (window === window.top) {
+                window.location.href = '{$proctor_url}&url=' + encodeURIComponent(window.location.href);
+            }
+        ";
+        $CFG->additionalhtmlhead .= "<script>{$js}</script>";
+        return; // Do not load proctoring.js inside the iframe!
+    }
+    
+    // If we are here, we must be on proctor.php. Load proctoring.js!
     // Inject our AMD module.
     $config = [
         'cmid' => $cmid,
+        'current_strikes' => $violation_count,
         'userid' => $USER->id,
         'requirecamera' => get_config('local_netrago', 'allow_camera') ? $settings->requirecamera : 0,
         'requirefullscreen' => get_config('local_netrago', 'allow_fullscreen') ? $settings->requirefullscreen : 0,
@@ -308,51 +338,6 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false),
         'descriptor' => $descriptor_to_use
     ];
-
-    // Auto-attempt quiz if navigating from KYC or bypassing
-    if (strpos($urlpath, '/mod/quiz/view.php') !== false) {
-        $auto_start_js = "
-            document.addEventListener('DOMContentLoaded', function() {
-                var forms = document.querySelectorAll('form[action*=\"startattempt.php\"]');
-                if (forms.length > 0) {
-                    var btn = forms[0].querySelector('button[type=\"submit\"], input[type=\"submit\"]');
-                    if (btn) {
-                        // Create a temporary overlay so they don't see the page flash
-                        var overlay = document.createElement('div');
-                        overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f4f6f9; z-index:9999999; display:flex; align-items:center; justify-content:center; flex-direction:column;';
-                        overlay.innerHTML = '<div class=\"spinner-border text-primary\" style=\"width: 3rem; height: 3rem;\" role=\"status\"></div><h4 class=\"mt-3\">Starting Activity...</h4>';
-                        document.body.appendChild(overlay);
-                        btn.click();
-                    }
-                }
-            });
-        ";
-        $CFG->additionalhtmlhead .= "<script>{$auto_start_js}</script>";
-    }
-
-    // No-JS Fallback: Hide the main content via CSS.
-    // The proctoring.js will remove this CSS once camera/permissions are granted.
-    $warningmsg = get_string('js_required_warning', 'local_netrago');
-    $css = "
-        <style id='netrago-anti-js-bypass'>
-            body { overflow: hidden !important; }
-            #netrago-nojs-warning { 
-                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-                background: #f8d7da; color: #721c24; 
-                z-index: 9999999; display: flex; flex-direction: column;
-                align-items: center; justify-content: center;
-                font-size: 1.2rem; font-weight: bold; text-align: center; padding: 20px;
-            }
-        </style>
-        <div id='netrago-nojs-warning'>
-            <i class='fa fa-exclamation-triangle fa-3x mb-3'></i>
-            <span id='netrago-warning-text'>{$warningmsg}</span>
-            <button id='netrago-start-btn' class='btn btn-primary mt-4' style='display:none; font-size: 1.1rem; padding: 10px 20px;'><i class='fa fa-desktop'></i> Start Activity & Share Screen</button>
-        </div>
-    ";
-    
-    // We add this to the page header so it renders before the content.
-    $CFG->additionalhtmlhead .= $css;
 
     $PAGE->requires->js(new moodle_url('/local/netrago/amd/src/face-api.min.js'));
     $PAGE->requires->js_call_amd('local_netrago/proctoring', 'init', [$config]);

@@ -17,6 +17,15 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
         init: function(config) {
             this.config = config;
             
+            // Persistent Strikes
+            this.strikes = this.config.current_strikes || 0;
+            if (this.strikes > 0 && this.strikes < 3) {
+                notification.alert('NetraGo Proctoring', 'Warning: You have ' + this.strikes + ' recorded violations for this activity. A total of 3 violations will terminate your attempt automatically.', 'I Understand');
+            } else if (this.strikes >= 3) {
+                this.handleViolation('You have already exceeded the maximum allowed violations.');
+                return;
+            }
+            
             if (this.config.descriptor) {
                 try {
                     var parsed = JSON.parse(this.config.descriptor);
@@ -57,6 +66,8 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 var btn = document.getElementById('netrago-start-btn');
                 if (btn) {
                     btn.style.display = 'inline-block';
+                    var spinner = document.getElementById('netrago-loading-spinner');
+                    if (spinner) spinner.style.display = 'none';
                     if (warningText) {
                         warningText.innerText = "Please click the button below to share your screen and start the activity.";
                     }
@@ -68,6 +79,8 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                     });
                 }
             } else if (this.config.requirecamera == 1) {
+                var spinner = document.getElementById('netrago-loading-spinner');
+                if (spinner) spinner.style.display = 'block';
                 if (warningText) {
                     warningText.innerText = "Initializing NetraGo Proctoring...";
                 }
@@ -79,6 +92,13 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
 
         initScreenCapture: function() {
             var self = this;
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                var warningText = document.getElementById('netrago-warning-text');
+                if (warningText) {
+                    warningText.innerText = "Screen sharing is not supported on this browser/device. Please use a desktop browser (Chrome/Edge/Firefox).";
+                }
+                return;
+            }
             navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
                 .then(function(stream) {
                     var trackSettings = stream.getVideoTracks()[0].getSettings();
@@ -127,6 +147,8 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                         btn.disabled = false;
                         btn.innerHTML = "<i class='fa fa-desktop'></i> Start Activity & Share Screen";
                     }
+                    var spinner = document.getElementById('netrago-loading-spinner');
+                    if (spinner) spinner.style.display = 'none';
                     if (warningText) {
                         warningText.innerText = "Screen sharing access is required to proceed. Please allow screen sharing. (" + err.message + ")";
                     } else {
@@ -136,11 +158,15 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
         },
 
         unlockPage: function() {
-            var styleNode = document.getElementById('netrago-anti-js-bypass');
-            if (styleNode) styleNode.remove();
-            
             var warningNode = document.getElementById('netrago-nojs-warning');
             if (warningNode) warningNode.remove();
+            
+            var frame = document.getElementById('netrago-quiz-frame');
+            if (frame && (!frame.src || frame.src === '')) {
+                frame.style.display = 'block';
+                frame.src = this.config.attempt_url;
+                frame.focus();
+            }
         },
 
         blockKeyboardShortcuts: function() {
@@ -215,63 +241,31 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
             var self = this;
             
             var createFSOVerlay = function() {
-                if (document.getElementById('netrago-fs-overlay')) return;
-                var overlay = document.createElement('div');
-                overlay.id = 'netrago-fs-overlay';
-                overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:sans-serif; text-align:center;';
-                
-                var icon = document.createElement('i');
-                icon.className = 'fa fa-expand fa-4x mb-4';
-                overlay.appendChild(icon);
-                
-                var title = document.createElement('h2');
-                title.innerText = 'Fullscreen Mode Required';
-                title.style.color = 'white';
-                overlay.appendChild(title);
-                
-                var desc = document.createElement('p');
-                desc.innerText = 'You must enter fullscreen mode to participate in this activity.';
-                overlay.appendChild(desc);
-                
-                var btn = document.createElement('button');
-                btn.className = 'btn btn-primary btn-lg mt-3';
-                btn.innerText = 'Enter Fullscreen to Continue';
-                btn.style.cssText = 'padding:10px 24px; font-size:1.2rem; cursor:pointer;';
-                btn.onclick = function() {
+                var banner = document.getElementById('netrago-fs-banner');
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'netrago-fs-banner';
+                    banner.style.cssText = 'position:fixed; top:0; left:0; width:100vw; background:#dc3545; color:white; z-index:9999999; text-align:center; padding:10px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2);';
+                    banner.innerHTML = '<i class="fa fa-expand mr-2"></i> Fullscreen exited. Click HERE to resume fullscreen mode and continue the activity.';
+                    document.body.appendChild(banner);
+                }
+
+                var resumeFS = function() {
                     var docElm = document.documentElement;
                     try {
-                        if (docElm.requestFullscreen) {
-                            var promise = docElm.requestFullscreen();
-                            if (promise) promise.catch(e => console.log(e));
-                        } else if (docElm.mozRequestFullScreen) {
-                            var promise = docElm.mozRequestFullScreen();
-                            if (promise) promise.catch(e => console.log(e));
-                        } else if (docElm.webkitRequestFullscreen) {
-                            var promise = docElm.webkitRequestFullscreen();
-                            if (promise) promise.catch(e => console.log(e));
-                        } else if (docElm.webkitRequestFullScreen) {
-                            var promise = docElm.webkitRequestFullScreen();
-                            if (promise) promise.catch(e => console.log(e));
-                        } else if (docElm.msRequestFullscreen) {
-                            var promise = docElm.msRequestFullscreen();
-                            if (promise) promise.catch(e => console.log(e));
-                        }
-                    } catch (err) {
-                        console.log("Fullscreen Error:", err);
-                    }
+                        if (docElm.requestFullscreen) docElm.requestFullscreen();
+                        else if (docElm.mozRequestFullScreen) docElm.mozRequestFullScreen();
+                        else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
+                        else if (docElm.msRequestFullscreen) docElm.msRequestFullscreen();
+                    } catch (e) {}
                 };
-                overlay.appendChild(btn);
                 
-                document.body.appendChild(overlay);
-                document.body.style.overflow = 'hidden';
+                banner.addEventListener('click', resumeFS);
             };
 
             var removeFSOVerlay = function() {
-                var overlay = document.getElementById('netrago-fs-overlay');
-                if (overlay) {
-                    overlay.remove();
-                    document.body.style.overflow = '';
-                }
+                var banner = document.getElementById('netrago-fs-banner');
+                if (banner) banner.remove();
             };
 
             var checkFullscreen = function() {
@@ -427,42 +421,61 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
             this.takeScreenSnapshot('face_violation_' + this.strikes);
             
             if (this.strikes >= 3) {
-                notification.alert('NetraGo Proctoring', 'FINAL WARNING EXCEEDED: ' + reason + '<br>You have been kicked from the activity.', 'OK');
+                // INSTANTLY BLOCK UI to prevent any further interaction
+                var blocker = document.createElement('div');
+                blocker.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.95);z-index:999999999;color:red;display:flex;align-items:center;justify-content:center;font-size:2rem;text-align:center;font-weight:bold;flex-direction:column;';
+                blocker.innerHTML = '<div><i class="fa fa-ban fa-3x mb-3"></i><br>FINAL WARNING EXCEEDED<br><span style="font-size:1.2rem;color:white;">' + reason + '</span><br><br><span style="font-size:1rem;color:#ccc;">Your attempt is being forcefully terminated. Do not close this page.</span></div>';
+                document.body.appendChild(blocker);
                 
-                setTimeout(function() {
-                    // Kill all media streams before redirect
-                    if (self.stream) {
-                        self.stream.getTracks().forEach(track => track.stop());
-                    }
-                    if (self.screenStream) {
-                        self.screenStream.getTracks().forEach(track => track.stop());
-                    }
+                // Kill all media streams before redirect
+                if (self.stream) {
+                    self.stream.getTracks().forEach(track => track.stop());
+                }
+                if (self.screenStream) {
+                    self.screenStream.getTracks().forEach(track => track.stop());
+                }
 
-                    var form = document.getElementById('responseform');
-                    if (form) {
-                        var input1 = document.createElement('input');
+                var frame = document.getElementById('netrago-quiz-frame');
+                var form = null;
+                var frameDoc = null;
+                try {
+                    if (frame && frame.contentDocument) {
+                        frameDoc = frame.contentDocument;
+                        form = frameDoc.getElementById('responseform');
+                    }
+                } catch(e) {}
+
+                if (form && frameDoc) {
+                    var finishBtn = frameDoc.querySelector('input[name="finishattempt"], button[name="finishattempt"]');
+                    window.onbeforeunload = null;
+                    if (frame.contentWindow && frame.contentWindow.M && frame.contentWindow.M.core_formchangechecker) {
+                        frame.contentWindow.M.core_formchangechecker.reset_form_dirty_state();
+                    }
+                    if (frame.contentWindow) {
+                        frame.contentWindow.isSubmitting = true;
+                    }
+                    
+                    if (finishBtn) {
+                        finishBtn.click();
+                    } else {
+                        var input1 = frameDoc.createElement('input');
                         input1.type = 'hidden';
                         input1.name = 'finishattempt';
                         input1.value = '1';
                         form.appendChild(input1);
                         
-                        var input2 = document.createElement('input');
+                        var input2 = frameDoc.createElement('input');
                         input2.type = 'hidden';
                         input2.name = 'timeup';
                         input2.value = '1';
                         form.appendChild(input2);
                         
-                        window.onbeforeunload = null;
-                        if (window.M && M.core_formchangechecker) {
-                            M.core_formchangechecker.reset_form_dirty_state();
-                        }
-                        window.isSubmitting = true;
                         form.submit();
-                    } else {
-                        window.onbeforeunload = null;
-                        window.location.href = M.cfg.wwwroot + '/course/view.php?id=' + M.cfg.courseId;
                     }
-                }, 3000);
+                } else {
+                    window.onbeforeunload = null;
+                    window.location.href = M.cfg.wwwroot + '/course/view.php?id=' + M.cfg.courseId;
+                }
             } else {
                 // Obscure screen with blur
                 document.body.style.filter = 'blur(10px)';
@@ -518,15 +531,6 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
             $.post(url, {
                 cmid: this.config.cmid,
                 sesskey: M.cfg.sesskey
-            });
-        },
-
-        bindSubmitListener: function() {
-            var forms = document.querySelectorAll('form');
-            forms.forEach(function(f) {
-                f.addEventListener('submit', function() {
-                    window.isSubmitting = true;
-                });
             });
         }
     };
