@@ -1,0 +1,26 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Build artifacts
+amd/build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# PHP
+composer.lock
+vendor/
+
+# Dev/debug utilities (do not deploy)
+refactor_lib.py
+test_*.php

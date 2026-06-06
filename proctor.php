@@ -18,6 +18,11 @@ $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 $context = context_module::instance($cm->id);
 
+// Prevent open redirect: only allow URLs within this Moodle installation.
+if (strpos($url, $CFG->wwwroot) !== 0) {
+    throw new \moodle_exception('invalidurl', 'error');
+}
+
 $PAGE->set_url('/local/netrago/proctor.php', ['cmid' => $cmid]);
 $PAGE->set_context($context);
 $PAGE->set_cm($cm, $course);
@@ -29,6 +34,10 @@ $PAGE->set_pagelayout('embedded');
 
 // Fetch Settings
 $settings = $DB->get_record('local_netrago', ['cmid' => $cmid]);
+if (!$settings) {
+    // No proctoring settings for this CM — redirect to the attempt directly.
+    redirect(new moodle_url($url));
+}
 
 // Persistent Strikes Calculation
 $violation_count = $DB->count_records_select('local_netrago_logs', 
@@ -48,6 +57,7 @@ $descriptor_to_use = $kyc ? $kyc->descriptor : ($master_descriptor ? $master_des
 
 $config = [
     'cmid' => $cmid,
+    'courseid' => (int)$cm->course,
     'current_strikes' => $violation_count,
     'userid' => $USER->id,
     'requirecamera' => get_config('local_netrago', 'allow_camera') ? ($settings->requirecamera ?? 0) : 0,

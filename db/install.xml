@@ -28,7 +28,7 @@
         <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="eventtype" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="imagedata" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Base64 image data for snapshot events"/>
+        <FIELD NAME="imagedata" TYPE="text" LENGTH="big" NOTNULL="false" SEQUENCE="false" COMMENT="Base64 image data for snapshot events"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
@@ -43,9 +43,9 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="selfiedata" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="ktpdata" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="descriptor" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="JSON array of face descriptor floats"/>
+        <FIELD NAME="selfiedata" TYPE="text" LENGTH="big" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="ktpdata" TYPE="text" LENGTH="big" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="descriptor" TYPE="text" LENGTH="big" NOTNULL="true" SEQUENCE="false" COMMENT="JSON array of face descriptor floats"/>
         <FIELD NAME="timeverified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>

@@ -25,6 +25,9 @@ $PAGE->set_title('NetraGo KYC Onboarding');
 $PAGE->set_heading($course->fullname);
 $PAGE->set_pagelayout('standard');
 
+// Check enrollment.
+require_capability('mod/' . $cm->modname . ':view', $context);
+
 // Check if rate limited
 $thirty_mins_ago = time() - (30 * 60);
 $attempts = $DB->count_records_select('local_netrago_kyc_attempts', 
@@ -44,12 +47,21 @@ $fallbackurl = new moodle_url('/mod/' . $cm->modname . '/view.php', ['id' => $cm
 $finalreturnurl = $returnurl ? $returnurl : $fallbackurl->out(false);
 
 // Check for existing Master Face (successful KYC in the past)
-$master_face = $DB->get_record_sql("SELECT * FROM {local_netrago_kyc} WHERE userid = ? ORDER BY timeverified DESC", [$USER->id], IGNORE_MULTIPLE);
+$master_face = $DB->get_record_sql("SELECT * FROM {local_netrago_kyc} WHERE userid = ? ORDER BY timeverified DESC LIMIT 1", [$USER->id]);
 
 $has_master_face = $master_face ? true : false;
 $master_descriptor = $master_face ? $master_face->descriptor : '';
 
-$settings = $DB->get_record('local_netrago', ['cmid' => $cmid]);
+$config = [
+    'cmid' => $cmid,
+    'ajaxurl' => (new moodle_url('/local/netrago/ajax_kyc.php'))->out(false),
+    'has_master_face' => $has_master_face,
+    'master_descriptor' => $master_descriptor
+];
+
+// Load face-api.js and AMD module BEFORE header() so they inject correctly.
+$PAGE->requires->js(new moodle_url('/local/netrago/amd/src/face-api.min.js'));
+$PAGE->requires->js_call_amd('local_netrago/kyc', 'init', [$config]);
 
 $templatedata = [
     'returnurl' => $finalreturnurl,
@@ -64,17 +76,5 @@ $templatedata = [
 echo $OUTPUT->header();
 
 echo $OUTPUT->render_from_template('local_netrago/kyc', $templatedata);
-
-// Load face-api.js properly using Moodle Page Requirements
-$PAGE->requires->js(new moodle_url('/local/netrago/amd/src/face-api.min.js'));
-
-$config = [
-    'cmid' => $cmid,
-    'ajaxurl' => (new moodle_url('/local/netrago/ajax_kyc.php'))->out(false),
-    'has_master_face' => $has_master_face,
-    'master_descriptor' => $master_descriptor
-];
-
-$PAGE->requires->js_call_amd('local_netrago/kyc', 'init', [$config]);
 
 echo $OUTPUT->footer();

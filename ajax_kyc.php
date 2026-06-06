@@ -47,36 +47,55 @@ if ($status === 'failed') {
 }
 
 if ($status === 'success') {
+    // Validate descriptor: must be a JSON array of exactly 128 floats.
+    if (empty($descriptor)) {
+        echo json_encode(['success' => false, 'message' => 'Missing face descriptor.']);
+        exit;
+    }
+    $desc_array = @json_decode($descriptor, true);
+    if (!is_array($desc_array) || count($desc_array) !== 128) {
+        echo json_encode(['success' => false, 'message' => 'Invalid face descriptor format.']);
+        exit;
+    }
+    foreach ($desc_array as $val) {
+        if (!is_numeric($val)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid face descriptor values.']);
+            exit;
+        }
+    }
+
     // Check if a baseline already exists
     $existing = $DB->get_record('local_netrago_kyc', ['userid' => $USER->id, 'cmid' => $cmid]);
-    
+
     $kyc = new stdClass();
     $kyc->userid = $USER->id;
     $kyc->cmid = $cmid;
-    
-    if ($selfiedata !== '') {
-        $kyc->selfiedata = $selfiedata;
-    }
-    if ($descriptor !== '') {
-        $kyc->descriptor = $descriptor;
-    }
-    
+    $kyc->descriptor = $descriptor;
     $kyc->timeverified = time();
 
     if ($existing) {
         $kyc->id = $existing->id;
+        // Only update selfiedata/ktpdata if non-empty (preserve existing on re-verify).
+        $kyc->selfiedata = ($selfiedata !== '') ? $selfiedata : $existing->selfiedata;
         if ($ktpdata !== '') {
             $kyc->ktpdata = $ktpdata;
+        } else {
+            $kyc->ktpdata = $existing->ktpdata;
         }
         $DB->update_record('local_netrago_kyc', $kyc);
     } else {
-        $kyc->ktpdata = $ktpdata;
-        // If ktpdata is empty (using master face), fetch from the master record
-        if ($kyc->ktpdata === '') {
-            $master = $DB->get_record_sql("SELECT * FROM {local_netrago_kyc} WHERE userid = ? ORDER BY timeverified DESC", [$USER->id], IGNORE_MULTIPLE);
-            if ($master) {
-                $kyc->ktpdata = $master->ktpdata;
-            }
+        // Guard NOTNULL columns — selfiedata required for new record.
+        if (empty($selfiedata)) {
+            echo json_encode(['success' => false, 'message' => 'Selfie image is required.']);
+            exit;
+        }
+        $kyc->selfiedata = $selfiedata;
+        // If ktpdata is empty (using master face), fetch from the master record.
+        if ($ktpdata !== '') {
+            $kyc->ktpdata = $ktpdata;
+        } else {
+            $master = $DB->get_record_sql("SELECT * FROM {local_netrago_kyc} WHERE userid = ? ORDER BY timeverified DESC LIMIT 1", [$USER->id]);
+            $kyc->ktpdata = ($master && !empty($master->ktpdata)) ? $master->ktpdata : '';
         }
         $DB->insert_record('local_netrago_kyc', $kyc);
     }

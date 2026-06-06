@@ -1,4 +1,4 @@
-define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'], function($, ajax, notification) {
+define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notification) {
 
     var NetraGoProctor = {
         config: null,
@@ -474,7 +474,7 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                     }
                 } else {
                     window.onbeforeunload = null;
-                    window.location.href = M.cfg.wwwroot + '/course/view.php?id=' + M.cfg.courseId;
+                    window.location.href = M.cfg.wwwroot + '/course/view.php?id=' + this.config.courseid;
                 }
             } else {
                 // Obscure screen with blur
@@ -522,14 +522,6 @@ define('local_netrago/proctoring', ['jquery', 'core/ajax', 'core/notification'],
                 cmid: this.config.cmid,
                 eventtype: eventType,
                 imagedata: imageData,
-                sesskey: M.cfg.sesskey
-            });
-        },
-
-        sendHeartbeat: function() {
-            var url = M.cfg.wwwroot + '/local/netrago/ajax_heartbeat.php';
-            $.post(url, {
-                cmid: this.config.cmid,
                 sesskey: M.cfg.sesskey
             });
         }

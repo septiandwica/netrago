@@ -85,7 +85,7 @@ if ($userid == 0) {
             
             $table->data[] = [
                 fullname($u),
-                $u->email,
+                s($u->email),
                 $kyc_badge,
                 $v_badge,
                 $btn
@@ -150,12 +150,14 @@ if ($userid == 0) {
         
         echo html_writer::start_tag('div', ['class' => 'col-md-6 text-center']);
         echo html_writer::tag('h5', 'Live Selfie');
-        echo html_writer::tag('img', '', ['src' => $kyc->selfiedata, 'class' => 'kyc-img shadow-sm']);
+        $selfie_src = (strpos((string)$kyc->selfiedata, 'data:image/') === 0) ? $kyc->selfiedata : '';
+        echo html_writer::tag('img', '', ['src' => $selfie_src, 'class' => 'kyc-img shadow-sm']);
         echo html_writer::end_tag('div');
-        
+
         echo html_writer::start_tag('div', ['class' => 'col-md-6 text-center']);
         echo html_writer::tag('h5', 'Official ID Card (KTP/KTM/SIM)');
-        echo html_writer::tag('img', '', ['src' => $kyc->ktpdata, 'class' => 'kyc-img shadow-sm']);
+        $ktp_src = (strpos((string)$kyc->ktpdata, 'data:image/') === 0) ? $kyc->ktpdata : '';
+        echo html_writer::tag('img', '', ['src' => $ktp_src, 'class' => 'kyc-img shadow-sm']);
         echo html_writer::end_tag('div');
         
         echo html_writer::end_tag('div');
@@ -187,10 +189,10 @@ if ($userid == 0) {
             echo html_writer::start_tag('div', ['class' => $class]);
             echo html_writer::start_tag('div', ['class' => 'card-body']);
             
-            echo html_writer::tag('span', userdate($log->timecreated, '%I:%M:%S %p'), ['class' => 'event-time']);
-            echo html_writer::tag('span', $log->eventtype, ['class' => 'badge ' . $badge_class]);
+            echo html_writer::tag('span', userdate($log->timecreated, get_string('strftimetime', 'langconfig')), ['class' => 'event-time']);
+            echo html_writer::tag('span', s($log->eventtype), ['class' => 'badge ' . $badge_class]);
             
-            if (!empty($log->imagedata)) {
+            if (!empty($log->imagedata) && strpos($log->imagedata, 'data:image/') === 0) {
                 echo html_writer::start_tag('div', ['class' => 'event-img-wrapper']);
                 echo html_writer::tag('img', '', ['src' => $log->imagedata]);
                 echo html_writer::end_tag('div');

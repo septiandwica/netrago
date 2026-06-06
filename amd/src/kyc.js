@@ -1,4 +1,4 @@
-define('local_netrago/kyc', ['jquery', 'core/ajax', 'core/notification'], function($, ajax, notification) {
+define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notification) {
 
     var NetraGoKYC = {
         config: null,

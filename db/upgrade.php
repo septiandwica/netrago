@@ -35,5 +35,34 @@ function xmldb_local_netrago_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026060503, 'local', 'netrago');
     }
 
+    if ($oldversion < 2026060504) {
+        // Change imagedata column to longtext to support base64 screen captures.
+        $table = new xmldb_table('local_netrago_logs');
+        $field = new xmldb_field('imagedata', XMLDB_TYPE_TEXT, 'big', null, null, null, null, 'eventtype');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_type($table, $field);
+        }
+
+        // Change selfiedata, ktpdata, descriptor columns in kyc table.
+        $table = new xmldb_table('local_netrago_kyc');
+
+        $field = new xmldb_field('selfiedata', XMLDB_TYPE_TEXT, 'big', null, XMLDB_NOTNULL, null, null, 'cmid');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_type($table, $field);
+        }
+
+        $field = new xmldb_field('ktpdata', XMLDB_TYPE_TEXT, 'big', null, XMLDB_NOTNULL, null, null, 'selfiedata');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_type($table, $field);
+        }
+
+        $field = new xmldb_field('descriptor', XMLDB_TYPE_TEXT, 'big', null, XMLDB_NOTNULL, null, null, 'ktpdata');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_type($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026060504, 'local', 'netrago');
+    }
+
     return true;
 }

@@ -144,12 +144,12 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         return;
     }
 
-    $urlpath = '';
-    if ($PAGE->url) {
-        $urlpath = $PAGE->url->out_as_local_url(false);
-    } else {
-        $urlpath = $_SERVER['REQUEST_URI'] ?? '';
-    }
+        $urlpath = '';
+        if ($PAGE->url) {
+            $urlpath = $PAGE->url->out_as_local_url(false);
+        } else {
+            $urlpath = optional_param('', '', PARAM_LOCALURL);
+        }
 
     // Inject into Course Grader Report (Course Gradebook)
     if (strpos($urlpath, '/grade/report/grader/index.php') !== false) {
@@ -216,7 +216,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
     if ($PAGE->url) {
         $urlpath = $PAGE->url->out_as_local_url(false);
     } else {
-        $urlpath = $_SERVER['REQUEST_URI'];
+        $urlpath = optional_param('', '', PARAM_LOCALURL);
     }
     
     if (strpos($urlpath, '/mod/') === false || strpos($urlpath, 'edit') !== false) {
@@ -313,7 +313,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
     
     // Redirect attempt.php to proctor.php if NOT inside iframe
     if (strpos($urlpath, 'attempt.php') !== false) {
-        $proctor_url = (new moodle_url('/local/netrago/proctor.php', ['cmid' => $cmid]))->out(false);
+        $proctor_url = (new moodle_url('/local/netrago/proctor.php', ['cmid' => $cmid, 'courseid' => $cm->course]))->out(false);
         $js = "
             if (window === window.top) {
                 window.location.href = '{$proctor_url}&url=' + encodeURIComponent(window.location.href);
@@ -327,6 +327,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
     // Inject our AMD module.
     $config = [
         'cmid' => $cmid,
+        'courseid' => (int)$cm->course,
         'current_strikes' => $violation_count,
         'userid' => $USER->id,
         'requirecamera' => get_config('local_netrago', 'allow_camera') ? $settings->requirecamera : 0,
