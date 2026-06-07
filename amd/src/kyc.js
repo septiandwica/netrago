@@ -78,6 +78,13 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             $('#btn-selfie').on('click', async function() {
                 var btn = $(this);
                 btn.prop('disabled', true).text('Detecting face...');
+                
+                if (self.videoElement.videoWidth === 0 || self.videoElement.videoHeight === 0) {
+                    notification.alert('NetraGo Warning', 'Camera is still initializing. Please wait a moment and try again.', 'OK');
+                    btn.prop('disabled', false).text('Capture Selfie');
+                    return;
+                }
+                
                 self.videoElement.pause(); // Freeze video
                 
                 var canvas = document.createElement('canvas');
@@ -85,7 +92,16 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 canvas.height = self.videoElement.videoHeight;
                 canvas.getContext('2d', { willReadFrequently: true }).drawImage(self.videoElement, 0, 0);
                 
-                var detection = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
+                var detection = null;
+                try {
+                    detection = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
+                } catch (e) {
+                    console.error("Face detection error:", e);
+                    self.videoElement.play(); // Unfreeze
+                    notification.alert('NetraGo Error', 'An error occurred during face detection. Please try again.', 'OK');
+                    btn.prop('disabled', false).text('Capture Selfie');
+                    return;
+                }
                 
                 if (detection) {
                     var faceArea = detection.detection.box.width * detection.detection.box.height;
@@ -128,6 +144,13 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             $('#btn-idcard').on('click', async function() {
                 var btn = $(this);
                 btn.prop('disabled', true).text('Verifying ID Card...');
+                
+                if (self.videoElement.videoWidth === 0 || self.videoElement.videoHeight === 0) {
+                    notification.alert('NetraGo Warning', 'Camera is still initializing. Please wait a moment and try again.', 'OK');
+                    btn.prop('disabled', false).text('Capture ID & Verify');
+                    return;
+                }
+                
                 self.videoElement.pause(); // Freeze video
                 
                 var canvas = document.createElement('canvas');
@@ -135,7 +158,16 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 canvas.height = self.videoElement.videoHeight;
                 canvas.getContext('2d', { willReadFrequently: true }).drawImage(self.videoElement, 0, 0);
                 
-                var detection = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
+                var detection = null;
+                try {
+                    detection = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
+                } catch (e) {
+                    console.error("Face detection error:", e);
+                    self.videoElement.play(); // Unfreeze
+                    notification.alert('NetraGo Error', 'An error occurred during face detection. Please try again.', 'OK');
+                    btn.prop('disabled', false).text('Capture ID & Verify');
+                    return;
+                }
                 
                 if (detection) {
                     var faceArea = detection.detection.box.width * detection.detection.box.height;

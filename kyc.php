@@ -69,6 +69,8 @@ $js_injection = "
 $CFG->additionalhtmlhead .= $js_injection;
 $PAGE->requires->js_call_amd('local_netrago/kyc', 'init', [$config]);
 
+$settings = $DB->get_record('local_netrago', ['cmid' => $cmid]);
+
 $templatedata = [
     'returnurl' => $finalreturnurl,
     'has_master_face' => $has_master_face,

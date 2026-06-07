@@ -99,7 +99,10 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 }
                 return;
             }
-            navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+            navigator.mediaDevices.getDisplayMedia({ 
+                video: { displaySurface: "monitor" }, 
+                audio: false 
+            })
                 .then(function(stream) {
                     var trackSettings = stream.getVideoTracks()[0].getSettings();
                     if (trackSettings.displaySurface && trackSettings.displaySurface !== 'monitor') {
