@@ -49,8 +49,8 @@ $finalreturnurl = $returnurl ? $returnurl : $fallbackurl->out(false);
 // Check for existing Master Face (successful KYC in the past)
 $master_face = $DB->get_record_sql("SELECT * FROM {local_netrago_kyc} WHERE userid = ? ORDER BY timeverified DESC LIMIT 1", [$USER->id]);
 
-$has_master_face = $master_face ? true : false;
 $master_descriptor = $master_face ? $master_face->descriptor : '';
+$has_master_face = ($master_face && !empty($master_descriptor)) ? true : false;
 
 $config = [
     'cmid' => $cmid,

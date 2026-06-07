@@ -104,8 +104,15 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     
                     if (self.config.has_master_face && self.config.master_descriptor) {
                         // Master face exists, verify directly
-                        self.idCardDescriptor = new Float32Array(JSON.parse(self.config.master_descriptor));
-                        self.verifyMatch();
+                        try {
+                            self.idCardDescriptor = new Float32Array(JSON.parse(self.config.master_descriptor));
+                            self.verifyMatch();
+                        } catch (e) {
+                            console.error("Invalid master descriptor data:", e);
+                            self.videoElement.play(); // Unfreeze
+                            notification.alert('NetraGo Error', 'Stored identity data is corrupted. Please contact your instructor to reset your KYC.', 'OK');
+                            btn.prop('disabled', false).text('Capture Selfie');
+                        }
                     } else {
                         // No master face, proceed to ID card capture
                         self.videoElement.play(); // Unfreeze for ID
