@@ -56,8 +56,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         },
 
         showStep: function(stepId) {
-            $('.step').removeClass('active');
-            $('#' + stepId).addClass('active');
+            $('.step').removeClass('active').hide();
+            $('#' + stepId).addClass('active').show();
         },
 
         bindEvents: function() {
@@ -147,7 +147,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 
                 if (self.videoElement.videoWidth === 0 || self.videoElement.videoHeight === 0) {
                     notification.alert('NetraGo Warning', 'Camera is still initializing. Please wait a moment and try again.', 'OK');
-                    btn.prop('disabled', false).text('Capture ID & Verify');
+                    btn.prop('disabled', false).text('Capture Selfie');
                     return;
                 }
                 
@@ -203,6 +203,15 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         verifyMatch: function() {
             var self = this;
             this.showStep('step-result');
+            
+            if ($('#step-result').length === 0) {
+                console.error("CRITICAL: #step-result is missing from the DOM!");
+                notification.alert('NetraGo Error', 'Verification step is missing from the page. Please hard refresh (Cmd+Shift+R).', 'OK');
+                self.videoElement.play();
+                $('#btn-selfie').prop('disabled', false).text('Capture Selfie');
+                return;
+            }
+            
             $('#result-icon').attr('class', 'fa fa-spinner fa-spin step-icon');
             $('#result-title').text('Verifying Identity...');
             $('#btn-retry').hide();
