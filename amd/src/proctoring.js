@@ -217,6 +217,23 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             }, 2000);
         },
 
+        bindSubmitListener: function() {
+            var frame = document.getElementById('netrago-quiz-frame');
+            if (frame) {
+                frame.addEventListener('load', function() {
+                    try {
+                        var frameDoc = frame.contentDocument || frame.contentWindow.document;
+                        var form = frameDoc.getElementById('responseform') || frameDoc.querySelector('form');
+                        if (form) {
+                            form.addEventListener('submit', function() {
+                                window.isSubmitting = true;
+                            });
+                        }
+                    } catch(e) {}
+                });
+            }
+        },
+
         monitorFocusLoss: function() {
             var self = this;
             window.addEventListener('blur', function() {

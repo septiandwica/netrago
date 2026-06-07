@@ -207,20 +207,28 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             $('#result-title').text('Verifying Identity...');
             $('#btn-retry').hide();
             
-            var distance = faceapi.euclideanDistance(this.selfieDescriptor, this.idCardDescriptor);
-            
-            // 0.45 is stricter threshold for ssdMobilenetv1 to prevent spoofing
-            if (distance < 0.45) {
-                // Match successful
-                $('#result-icon').attr('class', 'fa fa-check-circle step-icon text-success');
-                this.saveKYCResult('success', Array.from(this.selfieDescriptor));
-            } else {
-                // Match failed
+            try {
+                var distance = faceapi.euclideanDistance(this.selfieDescriptor, this.idCardDescriptor);
+                
+                // 0.45 is stricter threshold for ssdMobilenetv1 to prevent spoofing
+                if (distance < 0.45) {
+                    // Match successful
+                    $('#result-icon').attr('class', 'fa fa-check-circle step-icon text-success');
+                    this.saveKYCResult('success', Array.from(this.selfieDescriptor));
+                } else {
+                    // Match failed
+                    $('#result-icon').attr('class', 'fa fa-times-circle step-icon text-danger');
+                    $('#result-title').text('Verification Failed');
+                    $('#result-desc').text('Faces do not match. Please ensure the ID card belongs to you and is clearly visible.');
+                    $('#btn-retry').show();
+                    this.saveKYCResult('failed', null);
+                }
+            } catch (e) {
+                console.error("Error calculating distance:", e);
                 $('#result-icon').attr('class', 'fa fa-times-circle step-icon text-danger');
-                $('#result-title').text('Verification Failed');
-                $('#result-desc').text('Faces do not match. Please ensure the ID card belongs to you and is clearly visible.');
+                $('#result-title').text('Verification Error');
+                $('#result-desc').text('An error occurred while comparing faces. The identity data might be corrupted.');
                 $('#btn-retry').show();
-                this.saveKYCResult('failed', null);
             }
         },
 
@@ -251,13 +259,14 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     $('#result-title').text('Locked Out').addClass('text-danger');
                     $('#result-desc').text(res.message);
                 } else {
-                    $('#result-title').text('Error').addClass('text-danger');
-                    $('#result-desc').text(res.message);
+                    $('#result-title').text('Server Error').addClass('text-danger');
+                    $('#result-desc').text(res.error || 'Failed to save KYC verification data.');
                     $('#btn-retry').show();
                 }
-            }).fail(function() {
+            }).fail(function(jqXHR, textStatus, errorThrown) {
+                $('#result-icon').attr('class', 'fa fa-times-circle step-icon text-danger');
                 $('#result-title').text('Network Error').addClass('text-danger');
-                $('#result-desc').text('Failed to communicate with server.');
+                $('#result-desc').text('Failed to contact server: ' + textStatus + '. Please try again.');
                 $('#btn-retry').show();
             });
         }
