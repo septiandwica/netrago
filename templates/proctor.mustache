@@ -92,18 +92,46 @@
         </div>
 
         <!-- Step 1: Info -->
-        <div id="nf-step-1" class="netrago-step">
-            <h2>Start attempt</h2>
-            <p>Welcome to the proctored quiz. Please follow the instructions to setup your proctoring environment before starting the attempt.</p>
-            <div class="netrago-info-box">
-                <strong>Camera and screen tracking is enabled</strong>
-                <ul>
-                    <li>To start an attempt you need to provide access to your camera and screen.</li>
-                    <li>Snapshots from your camera and screen will be taken during your attempt.</li>
-                    <li>A report will be shown to your teacher once you finish your quiz attempt.</li>
+        <div id="nf-step-1" class="netrago-step active">
+            <h2>Welcome to NetraGo Proctoring</h2>
+            <p style="font-size: 16px; margin-bottom: 20px;">
+                Hello! This activity is closely monitored by the <strong>NetraGo AI Proctoring System</strong> to ensure academic integrity. Before you begin, please review the rules and setup your environment.
+            </p>
+            
+            <div class="netrago-info-box" style="background: #e8f4f8; border-color: #b8e2f2; color: #0c5460; margin-bottom: 15px;">
+                <strong><i class="fa fa-info-circle"></i> Preparation Checklist:</strong>
+                <ul style="margin-top: 8px;">
+                    {{#requirecamera}}<li>Ensure you are in a <strong>well-lit room</strong> so your face is clearly visible to the camera.</li>{{/requirecamera}}
+                    {{#requireaudio}}<li>Ensure your environment is <strong>quiet and free from background noise</strong> or other people talking.</li>{{/requireaudio}}
+                    {{#requirefullscreen}}<li>Close unnecessary applications and prepare to stay in fullscreen.</li>{{/requirefullscreen}}
+                    {{^requirecamera}}{{^requireaudio}}<li>Find a comfortable and quiet place to take your exam.</li>{{/requireaudio}}{{/requirecamera}}
+                    <li>Unplug any secondary or external monitors (they are prohibited).</li>
+                    {{#requirekyc}}<li>Prepare your <strong>Official ID Card (KTP/KTM/SIM)</strong> for identity verification.</li>{{/requirekyc}}
                 </ul>
             </div>
-            <button type="button" id="nf-btn-next-1" class="netrago-btn" style="position:relative; z-index:999999; pointer-events:auto;" onclick="document.getElementById('nf-step-1').style.display='none'; if(document.getElementById('nf-step-2')) { document.getElementById('nf-step-2').style.display='block'; } else { document.getElementById('nf-step-3').style.display='block'; }">Continue</button>
+
+            <div class="netrago-info-box" style="margin-bottom: 15px;">
+                <strong><i class="fa fa-shield"></i> Active Restrictions by Your Teacher:</strong>
+                <ul style="margin-top: 8px;">
+                    {{#requirecamera}}<li><strong>Webcam Tracking:</strong> Snapshots of your face will be taken periodically to detect multiple people or absence.</li>{{/requirecamera}}
+                    {{#requireaudio}}<li><strong>Audio Monitoring:</strong> Ambient noise and conversations will be continuously monitored.</li>{{/requireaudio}}
+                    {{#requirescreencapture}}<li><strong>Screen Sharing:</strong> You must share your entire screen. Snapshots will be taken upon suspicious activity.</li>{{/requirescreencapture}}
+                    {{#requirefullscreen}}<li><strong>Fullscreen Enforced:</strong> You cannot exit fullscreen mode during the attempt.</li>{{/requirefullscreen}}
+                    {{#disablecopypaste}}<li><strong>Anti Copy-Paste:</strong> Right-click, text selection, and copy-paste functions are completely disabled.</li>{{/disablecopypaste}}
+                    {{#disablefocusloss}}<li><strong>Focus Loss Detection:</strong> Switching tabs, minimizing the browser, or opening other applications is prohibited.</li>{{/disablefocusloss}}
+                    {{#disabledevtools}}<li><strong>Keyboard Blocking:</strong> Developer tools (F12), printing, and specific shortcuts are blocked.</li>{{/disabledevtools}}
+                </ul>
+            </div>
+            
+            <div class="netrago-info-box" style="background: #f8d7da; border-color: #f5c6cb; color: #721c24; margin-bottom: 25px;">
+                <strong><i class="fa fa-warning"></i> Violation Limit:</strong>
+                <p style="margin: 5px 0 0 0;">
+                    {{#maxstrikes}}You are allowed a maximum of <strong>{{maxstrikes}} violations</strong>. Exceeding this limit will automatically terminate and submit your quiz.{{/maxstrikes}}
+                    {{^maxstrikes}}Automatic termination is disabled. Violations will only be logged.{{/maxstrikes}}
+                </p>
+            </div>
+
+            <button type="button" id="nf-btn-next-1" class="netrago-btn" style="position:relative; z-index:999999; pointer-events:auto;" onclick="document.getElementById('nf-step-1').style.display='none'; if(document.getElementById('nf-step-2')) { document.getElementById('nf-step-2').style.display='block'; } else { document.getElementById('nf-step-3').style.display='block'; }">I Understand & Continue</button>
         </div>
 
         <!-- Step 2: Screen Share -->
