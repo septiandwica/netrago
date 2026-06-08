@@ -134,6 +134,33 @@ $css = "
                 <h2 id='nf-loading-text'>Initializing Session...</h2>
                 <p>Please wait while we prepare your proctoring environment.</p>
             </div>
+            
+            <!-- KYC Video Container -->
+            <div id='kyc-video-container' style='display:none; text-align:center; margin-bottom: 20px;'>
+                <video id='webcam' autoplay muted playsinline style='width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ddd;'></video>
+            </div>
+
+            <!-- KYC Step 1: Selfie -->
+            <div id='nf-step-kyc-selfie' class='netrago-step'>
+                <h2>Step 1: Take a Selfie</h2>
+                <p>Look directly at the camera. Ensure your face is well-lit and not covered.</p>
+                <button id='btn-selfie' class='netrago-btn'><i class='fa fa-camera'></i> Capture Selfie</button>
+            </div>
+
+            <!-- KYC Step 2: ID Card -->
+            <div id='nf-step-kyc-idcard' class='netrago-step'>
+                <h2>Step 2: Official ID Card</h2>
+                <p>Hold your ID Card (KTP/KTM/SIM) in front of the camera.</p>
+                <button id='btn-idcard' class='netrago-btn'><i class='fa fa-search'></i> Capture & Verify</button>
+            </div>
+
+            <!-- KYC Step 3: Result -->
+            <div id='nf-step-kyc-result' class='netrago-step'>
+                <div class='netrago-spinner' id='kyc-result-spinner'></div>
+                <h2 id='result-title'>Verifying Identity...</h2>
+                <p id='result-desc'>Comparing your selfie with the ID card.</p>
+                <button id='btn-retry' class='netrago-btn' style='display:none; background:#dc3545;'><i class='fa fa-refresh'></i> Try Again</button>
+            </div>
 
             <!-- Step 1: Password & Info -->
             <div id='nf-step-1' class='netrago-step'>
@@ -197,13 +224,26 @@ $css = "
 $CFG->additionalhtmlhead .= $css;
 
 $faceapi_url = new moodle_url('/local/netrago/amd/src/face-api.min.js');
+$kyc_js_url = new moodle_url('/local/netrago/amd/src/kyc.min.js'); // Assuming we load it as well, or we can use require JS
 $js_injection = "
 <script>var _temp_define = window.define; window.define = undefined;</script>
 <script src=\"{$faceapi_url}\"></script>
 <script>window.define = _temp_define;</script>
+<script>
+    window.netragoKycCompleted = " . ($kyc ? 'true' : 'false') . ";
+    window.netragoHasMasterFace = " . ($master_descriptor ? 'true' : 'false') . ";
+    window.netragoKycAjaxUrl = '" . (new moodle_url('/local/netrago/ajax_kyc.php'))->out(false) . "';
+</script>
 ";
 $CFG->additionalhtmlhead .= $js_injection;
 $PAGE->requires->js_call_amd('local_netrago/proctoring', 'init', [$config]);
+// Load KYC script directly
+$PAGE->requires->js_call_amd('local_netrago/kyc', 'init', [
+    'cmid' => $cmid,
+    'ajaxurl' => (new moodle_url('/local/netrago/ajax_kyc.php'))->out(false),
+    'has_master_face' => $master_descriptor ? true : false,
+    'requirecamera' => $settings->requirecamera
+]);
 
 echo $OUTPUT->header();
 

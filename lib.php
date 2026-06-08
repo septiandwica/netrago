@@ -286,12 +286,8 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         }
     }
 
-    // Bypass KYC if camera is not required, OR if they already did KYC for this quiz, OR if they have a Master Face
-    if ($settings->requirecamera && !$kyc && !$master_descriptor) {
-        $returnurl = new moodle_url($PAGE->url);
-        $kycurl = new moodle_url('/local/netrago/kyc.php', ['cmid' => $cmid, 'returnurl' => $returnurl->out_as_local_url(false)]);
-        redirect($kycurl);
-    }
+    // KYC is now handled inside proctor.php modal
+    // Bypass KYC redirect here
 
     $descriptor_to_use = $kyc ? $kyc->descriptor : ($master_descriptor ? $master_descriptor : null);
 

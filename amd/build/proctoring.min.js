@@ -62,9 +62,19 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
             this.bindSubmitListener();
 
-            // Show step 1
-            document.getElementById('nf-step-loading').classList.remove('active');
-            document.getElementById('nf-step-1').classList.add('active');
+            // Show step 1 OR wait for KYC
+            if (window.netragoKycCompleted || !this.config.requirecamera) {
+                document.getElementById('nf-step-loading').classList.remove('active');
+                document.getElementById('nf-step-1').classList.add('active');
+            } else {
+                // kyc.js will handle the UI until KYC is done
+                var self = this;
+                $(document).on('netrago_kyc_done', function() {
+                    $('.netrago-step').removeClass('active').hide();
+                    document.getElementById('nf-step-1').classList.add('active');
+                    document.getElementById('nf-step-1').style.display = 'block';
+                });
+            }
 
             this.bindPreflightEvents();
         },
@@ -481,7 +491,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
             // Exactly 1 face, let's compare
             var distance = faceapi.euclideanDistance(detections[0].descriptor, this.baselineDescriptor);
-            if (distance > 0.45) {
+            if (distance > 0.60) {
                 this.handleViolation('Unrecognized face detected. Does not match KYC identity.');
             }
         },

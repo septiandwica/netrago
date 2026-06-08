@@ -45,8 +45,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             navigator.mediaDevices.getUserMedia({ video: {} })
                 .then(function(stream) {
                     self.videoElement.srcObject = stream;
-                    $('#video-container').show();
-                    self.showStep('step-selfie');
+                    $('#kyc-video-container').show();
+                    self.showStep('nf-step-kyc-selfie');
                     $('#kyc-status').text('Camera ready. Please proceed.');
                 })
                 .catch(function(err) {
@@ -56,7 +56,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         },
 
         showStep: function(stepId) {
-            $('.step').removeClass('active').hide();
+            $('.netrago-step').removeClass('active').hide();
             $('#' + stepId).addClass('active').show();
         },
 
@@ -71,7 +71,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     self.startCamera();
                 } else {
                     // Still downloading, show the loading spinner.
-                    self.showStep('step-loading');
+                    self.showStep('nf-step-kyc-idcard');
                 }
             });
 
@@ -143,11 +143,11 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
             $('#btn-idcard').on('click', async function() {
                 var btn = $(this);
-                btn.prop('disabled', true).text('Verifying ID Card...');
+                btn.prop('disabled', true).text('Detecting face...');
                 
                 if (self.videoElement.videoWidth === 0 || self.videoElement.videoHeight === 0) {
                     notification.alert('NetraGo Warning', 'Camera is still initializing. Please wait a moment and try again.', 'OK');
-                    btn.prop('disabled', false).text('Capture Selfie');
+                    btn.prop('disabled', false).text('Capture ID & Verify');
                     return;
                 }
                 
@@ -192,17 +192,17 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             });
 
             $('#btn-retry').on('click', function() {
-                self.videoElement.play(); // Unfreeze video on retry
-                self.showStep('step-selfie');
-                $('#btn-selfie').prop('disabled', false).text('Capture Selfie');
-                $('#btn-idcard').prop('disabled', false).text('Capture ID & Verify');
+                $('#kyc-video-container').show();
+                self.showStep('nf-step-kyc-selfie');
+                self.videoElement.play(); // unfreeze
                 $('#btn-retry').hide();
+                $('#btn-selfie').prop('disabled', false).text('Capture Selfie');
+                $('#btn-idcard').prop('disabled', false).text('Capture & Verify');
             });
         },
 
         verifyMatch: function() {
             var self = this;
-            this.showStep('step-result');
             
             if ($('#step-result').length === 0) {
                 console.error("CRITICAL: #step-result is missing from the DOM!");
@@ -256,9 +256,15 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 if (res.success) {
                     if (status === 'success') {
                         $('#result-title').text('Verification Successful!');
-                        $('#result-desc').text('Your identity has been verified.');
-                        $('#video-container').hide();
-                        self.showStep('step-proctoring-rules');
+                        $('#result-desc').text('Your identity has been verified. Moving to next step...');
+                        $('#kyc-video-container').hide();
+                        
+                        // Hand off to Proctoring Step 1 (Password)
+                        setTimeout(function() {
+                            window.netragoKycCompleted = true;
+                            // Trigger event so proctoring.js knows to proceed if it was waiting
+                            $(document).trigger('netrago_kyc_done');
+                        }, 1500);
                     } else {
                         $('#result-title').text('Verification Failed').addClass('text-danger');
                         $('#result-desc').text('The face on the ID card does not match the selfie. Please try again.');
