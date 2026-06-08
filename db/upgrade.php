@@ -64,13 +64,30 @@ function xmldb_local_netrago_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026060504, 'local', 'netrago');
     }
 
-    if ($oldversion < 2026060802) {
+    if ($oldversion < 2026060803) {
         $table = new xmldb_table('local_netrago');
-        $field = new xmldb_field('maxstrikes', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '3', 'disabledevtools');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
+        
+        $field_cp = new xmldb_field('disablecopypaste', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'requirescreencapture');
+        if (!$dbman->field_exists($table, $field_cp)) {
+            $dbman->add_field($table, $field_cp);
         }
-        upgrade_plugin_savepoint(true, 2026060802, 'local', 'netrago');
+        
+        $field_fl = new xmldb_field('disablefocusloss', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'disablecopypaste');
+        if (!$dbman->field_exists($table, $field_fl)) {
+            $dbman->add_field($table, $field_fl);
+        }
+        
+        $field_dt = new xmldb_field('disabledevtools', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'disablefocusloss');
+        if (!$dbman->field_exists($table, $field_dt)) {
+            $dbman->add_field($table, $field_dt);
+        }
+
+        $field_ms = new xmldb_field('maxstrikes', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '3', 'disabledevtools');
+        if (!$dbman->field_exists($table, $field_ms)) {
+            $dbman->add_field($table, $field_ms);
+        }
+        
+        upgrade_plugin_savepoint(true, 2026060803, 'local', 'netrago');
     }
 
     return true;
