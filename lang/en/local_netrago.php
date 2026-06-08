@@ -25,7 +25,7 @@ $string['disabledevtools_help'] = 'Block F12, Ctrl+P, and other developer shortc
 $string['requirescreencapture'] = 'Require screen capture';
 $string['requirescreencapture_help'] = 'If enabled, students must share their screen. Snapshots of their screen will be taken when suspicious events occur.';
 $string['maxstrikes'] = 'Maximum Violations (Strikes)';
-$string['maxstrikes_help'] = 'The maximum number of violations allowed before the attempt is automatically terminated and submitted. Set to 0 to disable automatic termination (only log events).';
+$string['maxstrikes_help'] = 'Set the maximum number of violations allowed before the quiz attempt is automatically terminated. Enter 0 to disable automatic termination (only logs violations).';
 
 // Frontend messages.
 $string['setup_required'] = 'Proctoring setup required';
