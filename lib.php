@@ -337,6 +337,14 @@ function local_netrago_extend_navigation(global_navigation $nav) {
                     form.addEventListener('submit', function(e) {
                         e.preventDefault();
                         var targetUrl = form.action;
+                        var cmidInput = form.querySelector('input[name=\"cmid\"]');
+                        if (cmidInput && targetUrl.indexOf('cmid=') === -1) {
+                            targetUrl += (targetUrl.indexOf('?') === -1 ? '?' : '&') + 'cmid=' + cmidInput.value;
+                        }
+                        var sesskeyInput = form.querySelector('input[name=\"sesskey\"]');
+                        if (sesskeyInput && targetUrl.indexOf('sesskey=') === -1) {
+                            targetUrl += (targetUrl.indexOf('?') === -1 ? '?' : '&') + 'sesskey=' + sesskeyInput.value;
+                        }
                         window.location.href = '{$proctor_url}&url=' + encodeURIComponent(targetUrl);
                     });
                 });
