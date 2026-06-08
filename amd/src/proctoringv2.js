@@ -528,7 +528,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 // INSTANTLY BLOCK UI to prevent any further interaction
                 var blocker = document.createElement('div');
                 blocker.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.95);z-index:999999999;color:red;display:flex;align-items:center;justify-content:center;font-size:2rem;text-align:center;font-weight:bold;flex-direction:column;';
-                blocker.innerHTML = '<div><i class="fa fa-ban fa-3x mb-3"></i><br>FINAL WARNING EXCEEDED<br><span style="font-size:1.2rem;color:white;">' + reason + '</span><br><br><span style="font-size:1rem;color:#ccc;">Your attempt is being forcefully terminated. Do not close this page.</span></div>';
+                var courseUrl = M.cfg.wwwroot + '/course/view.php?id=' + this.config.courseid;
+                blocker.innerHTML = '<div><i class="fa fa-ban fa-3x mb-3"></i><br>FINAL WARNING EXCEEDED<br><span style="font-size:1.2rem;color:white;">' + reason + '</span><br><br><span style="font-size:1rem;color:#ccc;">Your attempt has been forcefully terminated.</span><br><br><a href="' + courseUrl + '" style="background:#dc3545;color:white;padding:15px 30px;text-decoration:none;border-radius:5px;font-size:1.2rem;display:inline-block;margin-top:20px;">Return to Course</a></div>';
                 document.body.appendChild(blocker);
                 
                 // Kill all media streams before redirect
@@ -578,7 +579,6 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     }
                 } else {
                     window.onbeforeunload = null;
-                    window.location.href = M.cfg.wwwroot + '/course/view.php?id=' + this.config.courseid;
                 }
             } else {
                 // Obscure screen with blur
