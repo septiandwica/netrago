@@ -91,7 +91,7 @@ $css = "
             align-items: center; justify-content: center; overflow-y: auto; padding: 20px;
         }
         .netrago-card {
-            background: #fff; width: 100%; max-width: 500px; border-radius: 8px;
+            background: #fff; width: 100%; max-width: 650px; border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 30px; text-align: center;
         }
         .netrago-card h2 { font-size: 24px; margin-bottom: 15px; font-weight: 600; color: #333; }
@@ -147,7 +147,7 @@ $css = "
             
             <!-- KYC Video Container -->
             <div id='kyc-video-container' style='display:none; text-align:center; margin-bottom: 20px;'>
-                <video id='webcam' autoplay muted playsinline style='width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ddd;'></video>
+                <video id='webcam' autoplay muted playsinline style='width: 100%; max-width: 600px; border-radius: 8px; border: 2px solid #ddd;'></video>
             </div>
 
             <!-- KYC Step 1: Selfie -->
