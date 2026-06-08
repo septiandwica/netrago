@@ -82,17 +82,37 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
         bindPreflightEvents: function() {
             var self = this;
+            console.log('NETRAGO DEBUG: bindPreflightEvents called');
             
+            // Document level click listener to catch EVERY click and see if an overlay is blocking it
+            if (!window.netragoDebugClickBound) {
+                document.addEventListener('click', function(e) {
+                    console.log('NETRAGO DEBUG: Document registered a click on element:', e.target);
+                    console.log('NETRAGO DEBUG: e.target id =', e.target.id, 'class =', e.target.className);
+                });
+                window.netragoDebugClickBound = true;
+            }
+
             // Step 1 -> Step 2
             var btnNext1 = document.getElementById('nf-btn-next-1');
+            console.log('NETRAGO DEBUG: Found btnNext1?', btnNext1);
             if (btnNext1) {
                 btnNext1.onclick = function(e) {
+                    console.log('NETRAGO DEBUG: btnNext1.onclick FIRED!');
+                    alert('NETRAGO DEBUG: Button Continue Clicked! It works! Moving to next step...');
                     if (e) e.preventDefault();
-                    document.getElementById('nf-step-1').classList.remove('active');
+                    
+                    var step1 = document.getElementById('nf-step-1');
+                    var step2 = document.getElementById('nf-step-2');
+                    var step3 = document.getElementById('nf-step-3');
+                    console.log('NETRAGO DEBUG: Elements:', {step1: step1, step2: step2, step3: step3});
+                    console.log('NETRAGO DEBUG: self.config:', self.config);
+                    
+                    if (step1) step1.classList.remove('active');
                     if (self.config.requirescreencapture == 1) {
-                        document.getElementById('nf-step-2').classList.add('active');
+                        if (step2) step2.classList.add('active');
                     } else {
-                        document.getElementById('nf-step-3').classList.add('active');
+                        if (step3) step3.classList.add('active');
                     }
                 };
             }
