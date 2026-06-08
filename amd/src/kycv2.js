@@ -46,6 +46,21 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             var self = this;
             navigator.mediaDevices.getUserMedia({ video: {} })
                 .then(function(stream) {
+                    var track = stream.getVideoTracks()[0];
+                    var label = track.label.toLowerCase();
+                    var forbidden = ['obs', 'virtual', 'manycam', 'splitcam', 'logicapture', 'xsplit', 'camtwist'];
+                    
+                    var isForbidden = forbidden.some(function(keyword) {
+                        return label.indexOf(keyword) !== -1;
+                    });
+                    
+                    if (isForbidden) {
+                        stream.getTracks().forEach(t => t.stop());
+                        $('#nf-loading-text').text("Virtual Cameras are prohibited. (" + track.label + ")");
+                        notification.alert('NetraGo Security Warning', 'Virtual cameras (' + track.label + ') are strictly prohibited. Please use a real hardware webcam and reload the page.', 'I Understand');
+                        return;
+                    }
+                    
                     self.videoElement.srcObject = stream;
                     $('#kyc-video-container').show();
                     self.showStep('nf-step-kyc-selfie');
