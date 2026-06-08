@@ -22,13 +22,13 @@ require_sesskey();
 $context = context_module::instance($cm->id);
 
 // Rate limiting check
-$thirty_mins_ago = time() - (30 * 60);
+$five_mins_ago = time() - (5 * 60);
 $attempts = $DB->count_records_select('local_netrago_kyc_attempts', 
     "userid = ? AND cmid = ? AND timeattempted > ? AND status = 'failed'", 
-    [$USER->id, $cmid, $thirty_mins_ago]);
+    [$USER->id, $cmid, $five_mins_ago]);
 
 if ($attempts >= 5) {
-    echo json_encode(['success' => false, 'locked' => true, 'message' => 'You have failed the KYC verification 5 times. You are locked out for 30 minutes.']);
+    echo json_encode(['success' => false, 'locked' => true, 'message' => 'You have failed the KYC verification 5 times. You are locked out for 5 minutes.']);
     exit;
 }
 
