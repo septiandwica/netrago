@@ -268,7 +268,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     }
                     self.faceLoopId = setInterval(function() {
                         self.verifyFaceLoop();
-                    }, 3000);
+                    }, 10000);
                 }
 
                 setTimeout(function() {
