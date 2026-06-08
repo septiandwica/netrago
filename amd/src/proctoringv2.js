@@ -175,7 +175,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         
         requestCameraForPreview: function() {
             var self = this;
-            navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } })
+            navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: true })
                 .then(function(stream) {
                     var track = stream.getVideoTracks()[0];
                     var label = track.label.toLowerCase();
@@ -249,7 +249,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 }, 60000);
 
                 if (this.baselineDescriptor) {
-                    this.faceLoopId = setInterval(function() {
+                    self.monitorAudio();
+                    self.faceLoopId = setInterval(function() {
                         self.verifyFaceLoop();
                     }, 15000);
                 }
@@ -564,6 +565,55 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     }
                 }
             }, 5000);
+        },
+
+        monitorAudio: function() {
+            if (!this.stream) return;
+            var audioTracks = this.stream.getAudioTracks();
+            if (audioTracks.length === 0) return;
+
+            try {
+                var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                var analyser = audioContext.createAnalyser();
+                var microphone = audioContext.createMediaStreamSource(this.stream);
+                microphone.connect(analyser);
+                
+                analyser.smoothingTimeConstant = 0.8;
+                analyser.fftSize = 256;
+                
+                var dataArray = new Uint8Array(analyser.frequencyBinCount);
+                var self = this;
+                var noiseFrames = 0;
+                
+                setInterval(function() {
+                    if (!self.proctoringStarted) return;
+                    analyser.getByteFrequencyData(dataArray);
+                    var sum = 0;
+                    for (var i = 0; i < dataArray.length; i++) {
+                        sum += dataArray[i];
+                    }
+                    var average = sum / dataArray.length;
+                    
+                    // Decibel threshold heuristic (average > 40 is fairly loud talking/noise)
+                    if (average > 40) {
+                        noiseFrames++;
+                    } else {
+                        noiseFrames = 0;
+                    }
+                    
+                    // 10 seconds of sustained noise (since setInterval runs every 1 sec, 10 frames = 10s)
+                    if (noiseFrames >= 10) {
+                        if (!self.audioViolationLogged) {
+                            self.audioViolationLogged = true;
+                            self.handleViolation('Suspicious Audio: Sustained speaking or loud noise detected.');
+                            setTimeout(() => { self.audioViolationLogged = false; }, 30000);
+                        }
+                        noiseFrames = 0;
+                    }
+                }, 1000);
+            } catch (e) {
+                console.error("AudioContext not supported or failed to initialize", e);
+            }
         },
 
         verifyFaceLoop: async function() {

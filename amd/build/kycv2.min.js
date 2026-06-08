@@ -57,7 +57,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
         startCamera: function() {
             var self = this;
-            navigator.mediaDevices.getUserMedia({ video: {} })
+            navigator.mediaDevices.getUserMedia({ video: {}, audio: true })
                 .then(function(stream) {
                     var track = stream.getVideoTracks()[0];
                     var label = track.label.toLowerCase();
