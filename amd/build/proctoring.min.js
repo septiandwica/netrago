@@ -386,6 +386,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         monitorTabSwitching: function() {
             var self = this;
             document.addEventListener("visibilitychange", function() {
+                if (!self.proctoringStarted) return;
                 if (document.visibilityState === 'hidden') {
                     if (window.isSubmitting) return; // Allow exit during submit
                     self.logEvent('tab_switch');
@@ -400,6 +401,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 }
             });
             window.addEventListener('blur', function() {
+                if (!self.proctoringStarted) return;
                 if (window.isSubmitting) return; // Allow exit during submit
                 self.logEvent('focus_loss');
             });
