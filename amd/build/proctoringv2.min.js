@@ -679,8 +679,17 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         handleViolation: function(reason) {
             var self = this;
             this.strikes++;
-            this.takeSnapshot('face_violation_' + this.strikes);
-            this.takeScreenSnapshot('face_violation_' + this.strikes);
+            
+            var reasonCode = 'violation_' + this.strikes;
+            if (reason.indexOf('Tab switching') !== -1 || reason.indexOf('quiz tab') !== -1) reasonCode = 'tab_switch_violation_' + this.strikes;
+            else if (reason.indexOf('Looking down') !== -1) reasonCode = 'gaze_down_violation_' + this.strikes;
+            else if (reason.indexOf('Looking far') !== -1) reasonCode = 'gaze_side_violation_' + this.strikes;
+            else if (reason.indexOf('Audio') !== -1) reasonCode = 'audio_noise_violation_' + this.strikes;
+            else if (reason.indexOf('Multiple displays') !== -1) reasonCode = 'multi_display_violation_' + this.strikes;
+            else if (reason.indexOf('DevTools') !== -1) reasonCode = 'devtools_violation_' + this.strikes;
+            
+            this.takeSnapshot(reasonCode);
+            this.takeScreenSnapshot('screen_' + reasonCode);
             
             if (this.config.maxstrikes > 0 && this.strikes >= this.config.maxstrikes) {
                 // INSTANTLY BLOCK UI to prevent any further interaction
@@ -761,6 +770,14 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
         takeSnapshot: async function(eventType) {
             if (!this.videoElement || !this.stream) return;
+            
+            if (!this.canvasElement) {
+                this.canvasElement = document.createElement('canvas');
+                this.canvasElement.width = 320;
+                this.canvasElement.height = 240;
+                this.canvasElement.style.display = 'none';
+                document.body.appendChild(this.canvasElement);
+            }
 
             var ctx = this.canvasElement.getContext('2d', { willReadFrequently: true });
             ctx.drawImage(this.videoElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
@@ -789,6 +806,12 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
         takeScreenSnapshot: function(eventType) {
             if (!this.screenVideoElement || !this.screenStream) return;
+            
+            if (!this.screenCanvasElement) {
+                this.screenCanvasElement = document.createElement('canvas');
+                this.screenCanvasElement.style.display = 'none';
+                document.body.appendChild(this.screenCanvasElement);
+            }
             
             var video = this.screenVideoElement;
             var canvas = this.screenCanvasElement;
