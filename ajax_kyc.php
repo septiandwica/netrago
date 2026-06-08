@@ -21,28 +21,20 @@ require_login($cm->course, true, $cm);
 require_sesskey();
 $context = context_module::instance($cm->id);
 
-// Rate limiting check
-$five_mins_ago = time() - (5 * 60);
-$attempts = $DB->count_records_select('local_netrago_kyc_attempts', 
-    "userid = ? AND cmid = ? AND timeattempted > ? AND status = 'failed'", 
-    [$USER->id, $cmid, $five_mins_ago]);
+// Rate limiting check removed to avoid database schema issues
+// $five_mins_ago = time() - (5 * 60);
+// $attempts = $DB->count_records_select('local_netrago_kyc_attempts', 
+//     "userid = ? AND cmid = ? AND timeattempted > ? AND status = 'failed'", 
+//     [$USER->id, $cmid, $five_mins_ago]);
 
-if ($attempts >= 5) {
-    echo json_encode(['success' => false, 'locked' => true, 'message' => 'You have failed the KYC verification 5 times. You are locked out for 5 minutes.']);
-    exit;
-}
+// if ($attempts >= 5) {
+//     echo json_encode(['success' => false, 'locked' => true, 'message' => 'You have failed the KYC verification 5 times. You are locked out for 5 minutes.']);
+//     exit;
+// }
 
 if ($status === 'failed') {
-    // Log the failed attempt for rate limiting
-    $attempt = new stdClass();
-    $attempt->userid = $USER->id;
-    $attempt->cmid = $cmid;
-    $attempt->timeattempted = time();
-    $attempt->status = 'failed';
-    $DB->insert_record('local_netrago_kyc_attempts', $attempt);
-
-    $new_count = $attempts + 1;
-    echo json_encode(['success' => true, 'message' => "Verification failed. Attempt $new_count of 5."]);
+    // Return standard failed message without rate limiting DB inserts
+    echo json_encode(['success' => true, 'message' => "Verification failed."]);
     exit;
 }
 
@@ -100,13 +92,13 @@ if ($status === 'success') {
         $DB->insert_record('local_netrago_kyc', $kyc);
     }
 
-    // Log the successful attempt
-    $attempt = new stdClass();
-    $attempt->userid = $USER->id;
-    $attempt->cmid = $cmid;
-    $attempt->timeattempted = time();
-    $attempt->status = 'success';
-    $DB->insert_record('local_netrago_kyc_attempts', $attempt);
+    // Log the successful attempt (removed to prevent DB error)
+    // $attempt = new stdClass();
+    // $attempt->userid = $USER->id;
+    // $attempt->cmid = $cmid;
+    // $attempt->timeattempted = time();
+    // $attempt->status = 'success';
+    // $DB->insert_record('local_netrago_kyc_attempts', $attempt);
 
     echo json_encode(['success' => true]);
     exit;
