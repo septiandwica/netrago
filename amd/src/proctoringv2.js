@@ -73,6 +73,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 $(document).on('netrago_kyc_done', function() {
                     $('.netrago-step').removeClass('active').css('display', '');
                     document.getElementById('nf-step-1').classList.add('active');
+                    self.bindPreflightEvents();
                 });
             }
 
@@ -80,23 +81,55 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         },
 
         bindPreflightEvents: function() {
-            // Events are now handled inline via onclick attributes in the Mustache template
-            // to ensure 100% compatibility across all browsers and prevent event delegation issues.
-        },
-
-        handleScreenShareClick: function(btn) {
-            btn.disabled = true;
-            btn.innerHTML = "<i class='fa fa-spinner fa-spin'></i> Requesting Access...";
-            this.initScreenCapture();
-        },
-
-        handleStartAttemptClick: function(btn) {
-            if (btn.disabled) return;
-            document.getElementById('nf-step-3').classList.remove('active');
-            document.getElementById('nf-step-warning').classList.add('active');
+            var self = this;
             
-            // Init camera if required
-            this.startProctoringAndUnlock();
+            // Step 1 -> Step 2
+            var btnNext1 = document.getElementById('nf-btn-next-1');
+            if (btnNext1) {
+                btnNext1.onclick = function(e) {
+                    if (e) e.preventDefault();
+                    document.getElementById('nf-step-1').classList.remove('active');
+                    if (self.config.requirescreencapture == 1) {
+                        document.getElementById('nf-step-2').classList.add('active');
+                    } else {
+                        document.getElementById('nf-step-3').classList.add('active');
+                    }
+                };
+            }
+
+            // Step 2 Screen Share
+            var btnShare = document.getElementById('nf-btn-share-screen');
+            if (btnShare) {
+                btnShare.onclick = function(e) {
+                    if (e) e.preventDefault();
+                    this.disabled = true;
+                    this.innerHTML = "<i class='fa fa-spinner fa-spin'></i> Requesting Access...";
+                    self.initScreenCapture();
+                };
+            }
+
+            // Step 3 Consent Checkbox
+            var consentCheckbox = document.getElementById('nf-consent-checkbox');
+            if (consentCheckbox) {
+                consentCheckbox.onchange = function(e) {
+                    var btnStart = document.getElementById('nf-btn-start-attempt');
+                    if (btnStart) {
+                        btnStart.disabled = !this.checked;
+                    }
+                };
+            }
+
+            // Step 3 Start Button
+            var btnStart = document.getElementById('nf-btn-start-attempt');
+            if (btnStart) {
+                btnStart.onclick = function(e) {
+                    if (e) e.preventDefault();
+                    if (this.disabled) return;
+                    document.getElementById('nf-step-3').classList.remove('active');
+                    document.getElementById('nf-step-warning').classList.add('active');
+                    self.startProctoringAndUnlock();
+                };
+            }
         },
 
         moveToStep3: function() {
