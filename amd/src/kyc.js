@@ -219,8 +219,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             try {
                 var distance = faceapi.euclideanDistance(this.selfieDescriptor, this.idCardDescriptor);
                 
-                // 0.45 is stricter threshold for ssdMobilenetv1 to prevent spoofing
-                if (distance < 0.45) {
+                // 0.60 is standard threshold for ssdMobilenetv1
+                if (distance < 0.60) {
                     // Match successful
                     $('#result-icon').attr('class', 'fa fa-check-circle step-icon text-success');
                     this.saveKYCResult('success', Array.from(this.selfieDescriptor));
