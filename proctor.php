@@ -222,6 +222,8 @@ $css = "
         <input type='hidden' name='cmid' value='{$cmid}'>
         <input type='hidden' name='sesskey' value='" . sesskey() . "'>
         <input type='hidden' name='quizpassword' id='nf-hidden-password' value=''>
+        <input type='hidden' name='_qf__mod_quiz_pre_attempt_form' value='1'>
+        <input type='hidden' name='submitbutton' value='Start attempt'>
     </form>
 ";
 $CFG->additionalhtmlhead .= $css;
