@@ -10,7 +10,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_netrago';
-$plugin->version   = 2026060803;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2026060804;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2022112800;
 $plugin->release = '1.0.0-alpha';
 $plugin->maturity = MATURITY_ALPHA;

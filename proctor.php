@@ -146,9 +146,11 @@ $css = "
             </div>
             
             <!-- KYC Video Container -->
+            " . ($requirekyc ? "
             <div id='kyc-video-container' style='display:none; text-align:center; margin-bottom: 20px;'>
                 <video id='webcam' autoplay muted playsinline style='width: 100%; max-width: 600px; border-radius: 8px; border: 2px solid #ddd;'></video>
             </div>
+            " : "") . "
 
             <!-- KYC Step 1: Selfie -->
             <div id='nf-step-kyc-selfie' class='netrago-step'>
@@ -250,7 +252,7 @@ $js_injection = "
 <script src=\"{$faceapi_url}\"></script>
 <script>window.define = _temp_define;</script>
 <script>
-    window.netragoKycCompleted = " . ($kyc ? 'true' : 'false') . ";
+    window.netragoKycCompleted = " . (($kyc || !$requirekyc) ? 'true' : 'false') . ";
     window.netragoHasMasterFace = " . ($master_descriptor ? 'true' : 'false') . ";
     window.netragoKycAjaxUrl = '" . (new moodle_url('/local/netrago/ajax_kyc.php'))->out(false) . "';
 </script>
@@ -262,7 +264,8 @@ $PAGE->requires->js_call_amd('local_netrago/kycv2', 'init', [[
     'cmid' => $cmid,
     'ajaxurl' => (new moodle_url('/local/netrago/ajax_kyc.php'))->out(false),
     'has_master_face' => $master_descriptor ? true : false,
-    'requirecamera' => $settings->requirecamera
+    'requirecamera' => $settings->requirecamera,
+    'requirekyc' => $requirekyc
 ]]);
 
 echo $OUTPUT->header();

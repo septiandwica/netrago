@@ -10,8 +10,10 @@
 $string['pluginname'] = 'NetraGo';
 $string['netragoproctoring'] = 'NetraGo Options';
 $string['enablenetrago'] = 'Enable NetraGo';
-$string['requirecamera'] = 'Require webcam snapshots';
-$string['requirecamera_help'] = 'If enabled, students must allow camera access. Snapshots will be taken periodically to detect cheating.';
+$string['requirecamera'] = 'Require Camera';
+$string['requirecamera_help'] = 'If enabled, students must provide access to their webcam during the attempt. Photos will be taken periodically.';
+$string['requirekyc'] = 'Require ID Verification (KYC)';
+$string['requirekyc_help'] = 'If enabled, students must verify their identity by taking a selfie and showing their ID card before starting the attempt. Requires Camera to be enabled.';
 $string['requirefullscreen'] = 'Enforce fullscreen mode';
 $string['requirefullscreen_help'] = 'If enabled, students must remain in fullscreen mode. Exiting fullscreen will be logged as a suspicious event.';
 $string['disablecopypaste'] = 'Disable copy, paste, and text selection';

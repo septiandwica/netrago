@@ -29,6 +29,11 @@ function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
         $mform->addElement('selectyesno', 'netrago_requirecamera', get_string('requirecamera', 'local_netrago'));
         $mform->addHelpButton('netrago_requirecamera', 'requirecamera', 'local_netrago');
         $mform->setDefault('netrago_requirecamera', 0);
+
+        $mform->addElement('selectyesno', 'netrago_requirekyc', get_string('requirekyc', 'local_netrago'));
+        $mform->addHelpButton('netrago_requirekyc', 'requirekyc', 'local_netrago');
+        $mform->setDefault('netrago_requirekyc', 1);
+        $mform->hideIf('netrago_requirekyc', 'netrago_requirecamera', 'eq', 0);
     }
 
     if (get_config('local_netrago', 'allow_fullscreen')) {
@@ -79,6 +84,7 @@ function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
         $settings = $DB->get_record('local_netrago', ['cmid' => $cm->id]);
         if ($settings) {
             $mform->setDefault('netrago_requirecamera', $settings->requirecamera);
+            $mform->setDefault('netrago_requirekyc', isset($settings->requirekyc) ? $settings->requirekyc : 1);
             $mform->setDefault('netrago_requirefullscreen', $settings->requirefullscreen);
             $mform->setDefault('netrago_requirescreencapture', $settings->requirescreencapture ?? 0);
             $mform->setDefault('netrago_disablecopypaste', $settings->disablecopypaste);
@@ -107,6 +113,7 @@ function local_netrago_coursemodule_edit_post_actions($data, $course) {
     $settings = $DB->get_record('local_netrago', ['cmid' => $cmid]);
 
     $requirecamera = isset($data->netrago_requirecamera) ? $data->netrago_requirecamera : 0;
+    $requirekyc = isset($data->netrago_requirekyc) ? $data->netrago_requirekyc : 1;
     $requirefullscreen = isset($data->netrago_requirefullscreen) ? $data->netrago_requirefullscreen : 0;
     $requirescreencapture = isset($data->netrago_requirescreencapture) ? $data->netrago_requirescreencapture : 0;
     $disablecopypaste = isset($data->netrago_disablecopypaste) ? $data->netrago_disablecopypaste : 0;
@@ -118,6 +125,7 @@ function local_netrago_coursemodule_edit_post_actions($data, $course) {
         $record = new stdClass();
         $record->cmid = $cmid;
         $record->requirecamera = $requirecamera;
+        $record->requirekyc = $requirekyc;
         $record->requirefullscreen = $requirefullscreen;
         $record->requirescreencapture = $requirescreencapture;
         $record->disablecopypaste = $disablecopypaste;

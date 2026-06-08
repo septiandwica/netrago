@@ -90,5 +90,14 @@ function xmldb_local_netrago_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026060803, 'local', 'netrago');
     }
 
+    if ($oldversion < 2026060804) {
+        $table = new xmldb_table('local_netrago');
+        $field = new xmldb_field('requirekyc', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '1', 'maxstrikes');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        upgrade_plugin_savepoint(true, 2026060804, 'local', 'netrago');
+    }
+
     return true;
 }
