@@ -153,8 +153,16 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         },
 
         moveToStep3: function() {
-            document.getElementById('nf-step-2').classList.remove('active');
-            document.getElementById('nf-step-3').classList.add('active');
+            var step2 = document.getElementById('nf-step-2');
+            if (step2) {
+                step2.classList.remove('active');
+                step2.style.display = 'none';
+            }
+            var step3 = document.getElementById('nf-step-3');
+            if (step3) {
+                step3.classList.add('active');
+                step3.style.display = 'block';
+            }
         },
         
         requestCameraForPreview: function() {
@@ -182,7 +190,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     var btnShare = document.getElementById('nf-btn-share-screen');
                     if (btnShare) {
                         btnShare.disabled = false;
-                        btnShare.innerText = "Allow Share Screen";
+                        btnShare.innerHTML = "<i class='fa fa-desktop'></i> Allow Share Screen";
                     }
                 });
         },
