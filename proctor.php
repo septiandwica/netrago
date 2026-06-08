@@ -12,6 +12,10 @@ require_once(__DIR__ . '/../../config.php');
 $cmid = required_param('cmid', PARAM_INT);
 $url = required_param('url', PARAM_URL); // The original attempt.php URL to load in the iframe
 
+// Capture all POST data so we can relay it to the iframe later
+$post_data = $_POST;
+
+
 require_login();
 
 $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
@@ -103,6 +107,21 @@ $warningmsg = get_string('js_required_warning', 'local_netrago');
 $context_data = [
     'requirekyc' => $requirekyc
 ];
+
+// Generate a hidden form containing all original POST variables
+$hidden_form_html = "<form id='nf-hidden-start-form' method='POST' action='" . htmlspecialchars($url) . "' target='netrago-quiz-iframe' style='display:none;'>";
+foreach ($post_data as $key => $val) {
+    if (is_array($val)) {
+        foreach ($val as $v) {
+            $hidden_form_html .= "<input type='hidden' name='" . htmlspecialchars($key) . "[]' value='" . htmlspecialchars($v) . "'>";
+        }
+    } else {
+        $hidden_form_html .= "<input type='hidden' name='" . htmlspecialchars($key) . "' value='" . htmlspecialchars($val) . "'>";
+    }
+}
+$hidden_form_html .= "</form>";
+
+$context_data['hidden_form'] = $hidden_form_html;
 
 echo $OUTPUT->render_from_template('local_netrago/proctor', $context_data);
 
