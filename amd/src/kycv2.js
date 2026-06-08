@@ -13,6 +13,15 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
         init: function(config) {
             this.config = config;
+            
+            if (window.screen && window.screen.isExtended) {
+                $('#nf-loading-spinner').hide();
+                $('#nf-loading-text').text('Multiple Displays Detected');
+                $('#nf-loading-desc').html('<span class="text-danger">You must disconnect all external monitors to proceed with the exam. Dual-monitor setups are prohibited.</span>');
+                notification.alert('NetraGo Security Warning', 'Multiple displays detected! You must disconnect all external monitors to proceed.', 'I Understand');
+                return;
+            }
+            
             this.videoElement = document.getElementById('webcam');
             this.bindEvents();
             

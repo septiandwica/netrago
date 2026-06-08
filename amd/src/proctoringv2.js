@@ -20,6 +20,19 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             this.config = config;
             this.proctoringStarted = false;
             
+            if (window.screen && window.screen.isExtended) {
+                document.getElementById('netrago-preflight-container').style.display = 'block';
+                document.getElementById('netrago-quiz-frame').style.display = 'none';
+                
+                var overlay = document.getElementById('netrago-preflight-container');
+                overlay.innerHTML = '<div style="background:white;padding:30px;border-radius:10px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,0.1);max-width:500px;margin: 50px auto;">' +
+                    '<h2 class="text-danger"><i class="fa fa-ban"></i> Multiple Displays Detected</h2>' +
+                    '<p class="mt-3">Dual-monitor setups are strictly prohibited during this exam. You must disconnect all external monitors to proceed.</p>' +
+                    '<button onclick="window.location.reload()" class="btn btn-primary mt-3">I have disconnected it. Reload</button>' +
+                    '</div>';
+                return;
+            }
+            
             // Persistent Strikes
             this.strikes = this.config.current_strikes || 0;
             if (this.config.maxstrikes > 0 && this.strikes > 0 && this.strikes < this.config.maxstrikes) {
@@ -60,6 +73,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 this.blockKeyboardShortcuts();
                 this.detectDevTools();
             }
+            
+            this.monitorMultipleDisplays();
 
             this.bindSubmitListener();
 
@@ -528,7 +543,20 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             });
         },
 
-
+        monitorMultipleDisplays: function() {
+            var self = this;
+            setInterval(function() {
+                if (!self.proctoringStarted) return;
+                if (window.screen && window.screen.isExtended) {
+                    if (!self.multipleDisplayLogged) {
+                        self.multipleDisplayLogged = true;
+                        self.handleViolation('Multiple displays connected during exam. Please unplug external monitors.');
+                        // Reset flag after 1 minute to avoid infinite loops if they ignore it
+                        setTimeout(() => { self.multipleDisplayLogged = false; }, 60000);
+                    }
+                }
+            }, 5000);
+        },
 
         verifyFaceLoop: async function() {
             if (!this.videoElement || !this.stream || !this.modelsLoaded) return;
