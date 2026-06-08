@@ -13,9 +13,11 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         baselineDescriptor: null,
         strikes: 0,
         devToolsLogged: false,
+        proctoringStarted: false,
 
         init: function(config) {
             this.config = config;
+            this.proctoringStarted = false;
             
             // Persistent Strikes
             this.strikes = this.config.current_strikes || 0;
@@ -211,6 +213,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 frame.style.display = 'block';
                 frame.focus();
             }
+            this.proctoringStarted = true;
         },
 
         blockKeyboardShortcuts: function() {
@@ -242,6 +245,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         detectDevTools: function() {
             var self = this;
             setInterval(function() {
+                if (!self.proctoringStarted) return;
                 var threshold = 160;
                 var widthDiff = window.outerWidth - window.innerWidth > threshold;
                 var heightDiff = window.outerHeight - window.innerHeight > threshold;
@@ -275,9 +279,21 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             }
         },
 
+        monitorVisibility: function() {
+            var self = this;
+            document.addEventListener('visibilitychange', function() {
+                if (!self.proctoringStarted) return;
+                if (document.hidden) {
+                    self.takeSnapshot('tab_switch');
+                    self.takeScreenSnapshot('tab_switch');
+                }
+            });
+        },
+
         monitorFocusLoss: function() {
             var self = this;
             window.addEventListener('blur', function() {
+                if (!self.proctoringStarted) return;
                 self.takeSnapshot('focus_loss');
                 self.takeScreenSnapshot('focus_loss');
             });

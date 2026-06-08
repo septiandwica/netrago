@@ -208,6 +208,6 @@ $PAGE->requires->js_call_amd('local_netrago/proctoring', 'init', [$config]);
 echo $OUTPUT->header();
 
 // The iFrame container
-echo '<iframe id="netrago-quiz-frame" allow="camera *; microphone *; display-capture *; fullscreen *"></iframe>';
+echo '<iframe id="netrago-quiz-frame" name="netrago-quiz-iframe" allow="camera *; microphone *; display-capture *; fullscreen *"></iframe>';
 
 echo $OUTPUT->footer();
