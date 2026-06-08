@@ -130,9 +130,10 @@ $css = "
         <div class='netrago-card'>
             <!-- Loading Step -->
             <div id='nf-step-loading' class='netrago-step active'>
-                <div class='netrago-spinner'></div>
+                <div class='netrago-spinner' id='nf-loading-spinner'></div>
                 <h2 id='nf-loading-text'>Initializing Session...</h2>
-                <p>Please wait while we prepare your proctoring environment.</p>
+                <p id='nf-loading-desc'>Please wait while we prepare your proctoring environment.</p>
+                <button id='nf-btn-start-setup' class='netrago-btn' style='display:none; margin-top:20px;'><i class='fa fa-play'></i> Start Setup</button>
             </div>
             
             <!-- KYC Video Container -->

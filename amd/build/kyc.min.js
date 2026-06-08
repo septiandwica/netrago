@@ -27,11 +27,16 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 await faceapi.nets.faceLandmark68Net.loadFromUri(modelPath);
                 await faceapi.nets.faceRecognitionNet.loadFromUri(modelPath);
                 
-                this.modelsReady = true;
-                
-                // Automatically start if KYC is not yet completed
+                // Wait for user gesture before accessing camera to prevent browser hang
                 if (!window.netragoKycCompleted && this.config.requirecamera) {
-                    this.startCamera();
+                    var self = this;
+                    $('#nf-loading-spinner').hide();
+                    $('#nf-loading-text').text('Environment Ready');
+                    $('#nf-loading-desc').text('Please click the button below to start the camera and begin identity verification.');
+                    $('#nf-btn-start-setup').show().on('click', function() {
+                        $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Starting camera...');
+                        self.startCamera();
+                    });
                 }
             } catch (err) {
                 $('#nf-loading-text').text('Failed to load AI models. Please check your connection.');
