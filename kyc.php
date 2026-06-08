@@ -29,14 +29,14 @@ $PAGE->set_pagelayout('standard');
 require_capability('mod/' . $cm->modname . ':view', $context);
 
 // Check if rate limited
-$thirty_mins_ago = time() - (30 * 60);
+$five_mins_ago = time() - (5 * 60);
 $attempts = $DB->count_records_select('local_netrago_kyc_attempts', 
     "userid = ? AND cmid = ? AND timeattempted > ? AND status = 'failed'", 
-    [$USER->id, $cmid, $thirty_mins_ago]);
+    [$USER->id, $cmid, $five_mins_ago]);
 
 if ($attempts >= 5) {
     echo $OUTPUT->header();
-    echo $OUTPUT->notification("You have failed the KYC verification 5 times. You are locked out for 30 minutes. Please contact your instructor.", 'danger');
+    echo $OUTPUT->notification("You have failed the KYC verification 5 times. You are locked out for 5 minutes. Please contact your instructor.", 'danger');
     echo $OUTPUT->footer();
     exit;
 }

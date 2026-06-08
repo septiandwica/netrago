@@ -21,6 +21,14 @@ $context = context_module::instance($cm->id);
 
 require_capability('moodle/course:manageactivities', $context);
 
+$action = optional_param('action', '', PARAM_ALPHA);
+if ($action == 'resetkyc' && $userid > 0) {
+    require_sesskey();
+    $DB->delete_records('local_netrago_kyc', ['userid' => $userid, 'cmid' => $cmid]);
+    $DB->delete_records('local_netrago_kyc_attempts', ['userid' => $userid, 'cmid' => $cmid]);
+    redirect(new moodle_url('/local/netrago/report.php', ['cmid' => $cmid, 'userid' => $userid]), 'KYC data has been reset for this user. They will need to complete verification again.', null, \core\output\notification::NOTIFY_SUCCESS);
+}
+
 $PAGE->set_url('/local/netrago/report.php', ['cmid' => $cmid]);
 $PAGE->set_context($context);
 $PAGE->set_cm($cm, $course);
@@ -267,6 +275,39 @@ if ($userid == 0) {
         }
     }
     echo '</div>';
+    
+    // Show KYC Details and Reset
+    echo html_writer::tag('h4', 'Identity Verification (KYC)', ['class' => 'mt-4 border-top pt-4']);
+    
+    $kyc = $DB->get_record('local_netrago_kyc', ['userid' => $userid, 'cmid' => $cmid]);
+    
+    $reset_url = new moodle_url('/local/netrago/report.php', ['cmid' => $cmid, 'userid' => $userid, 'action' => 'resetkyc', 'sesskey' => sesskey()]);
+    echo html_writer::link($reset_url, '<i class="fa fa-refresh"></i> Reset KYC Verification', ['class' => 'btn btn-sm btn-danger mb-4', 'onclick' => 'return confirm("Are you sure you want to reset KYC for this user? They will have to retake their selfie and ID.");']);
+    
+    if ($kyc) {
+        echo html_writer::start_tag('div', ['class' => 'card mb-4']);
+        echo html_writer::start_tag('div', ['class' => 'card-header bg-success text-white']);
+        echo "<i class='fa fa-check-circle'></i> KYC Identity Verified (" . userdate($kyc->timeverified) . ")";
+        echo html_writer::end_tag('div');
+        echo html_writer::start_tag('div', ['class' => 'card-body row']);
+        
+        echo html_writer::start_tag('div', ['class' => 'col-md-6 text-center']);
+        echo html_writer::tag('h5', 'Live Selfie');
+        $selfie_src = (strpos((string)$kyc->selfiedata, 'data:image/') === 0) ? $kyc->selfiedata : '';
+        echo html_writer::tag('img', '', ['src' => $selfie_src, 'class' => 'kyc-img shadow-sm']);
+        echo html_writer::end_tag('div');
+
+        echo html_writer::start_tag('div', ['class' => 'col-md-6 text-center']);
+        echo html_writer::tag('h5', 'Official ID Card (KTP/KTM/SIM)');
+        $ktp_src = (strpos((string)$kyc->ktpdata, 'data:image/') === 0) ? $kyc->ktpdata : '';
+        echo html_writer::tag('img', '', ['src' => $ktp_src, 'class' => 'kyc-img shadow-sm']);
+        echo html_writer::end_tag('div');
+        
+        echo html_writer::end_tag('div');
+        echo html_writer::end_tag('div');
+    } else {
+        echo $OUTPUT->notification('User has not completed KYC for this activity.', 'warning');
+    }
 }
 
 echo html_writer::end_tag('div'); // container
