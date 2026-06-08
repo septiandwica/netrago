@@ -82,46 +82,40 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             var self = this;
             
             // Step 1 -> Step 2
-            var btnNext1 = document.getElementById('nf-btn-next-1');
-            if (btnNext1) {
-                btnNext1.addEventListener('click', function() {
-                    document.getElementById('nf-step-1').classList.remove('active');
-                    if (self.config.requirescreencapture == 1) {
-                        document.getElementById('nf-step-2').classList.add('active');
-                    } else {
-                        // Skip screen share if not required
-                        document.getElementById('nf-step-3').classList.add('active');
-                    }
-                });
-            }
+            $(document).on('click', '#nf-btn-next-1', function() {
+                document.getElementById('nf-step-1').classList.remove('active');
+                if (self.config.requirescreencapture == 1) {
+                    document.getElementById('nf-step-2').classList.add('active');
+                } else {
+                    // Skip screen share if not required
+                    document.getElementById('nf-step-3').classList.add('active');
+                }
+            });
 
             // Step 2 Screen Share
-            var btnShare = document.getElementById('nf-btn-share-screen');
-            if (btnShare) {
-                btnShare.addEventListener('click', function() {
-                    btnShare.disabled = true;
-                    btnShare.innerText = "Requesting Screen Share...";
-                    self.initScreenCapture();
-                });
-            }
+            $(document).on('click', '#nf-btn-share-screen', function() {
+                var btn = this;
+                btn.disabled = true;
+                btn.innerHTML = "<i class='fa fa-spinner fa-spin'></i> Requesting Access...";
+                self.initScreenCapture();
+            });
 
-            // Step 3 Consent
-            var consentCheckbox = document.getElementById('nf-consent-checkbox');
-            var btnStart = document.getElementById('nf-btn-start-attempt');
-            if (consentCheckbox && btnStart) {
-                consentCheckbox.addEventListener('change', function() {
+            // Step 3 Consent Checkbox
+            $(document).on('change', '#nf-consent-checkbox', function() {
+                var btnStart = document.getElementById('nf-btn-start-attempt');
+                if (btnStart) {
                     btnStart.disabled = !this.checked;
-                });
+                }
+            });
 
-                btnStart.addEventListener('click', function() {
-                    document.getElementById('nf-step-3').classList.remove('active');
-                    document.getElementById('nf-step-warning').classList.add('active');
-                    
-
-                    // Init camera if required
-                    self.startProctoringAndUnlock();
-                });
-            }
+            // Step 3 Start Button
+            $(document).on('click', '#nf-btn-start-attempt', function() {
+                document.getElementById('nf-step-3').classList.remove('active');
+                document.getElementById('nf-step-warning').classList.add('active');
+                
+                // Init camera if required
+                self.startProctoringAndUnlock();
+            });
         },
 
         moveToStep3: function() {

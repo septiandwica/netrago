@@ -313,8 +313,8 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         "userid = ? AND cmid = ? AND (eventtype LIKE '%violation%' OR eventtype LIKE '%focus_loss%' OR eventtype LIKE '%tab_switch%')", 
         [$USER->id, $cmid]);
 
-    // iFrame breakout for non-attempt pages (e.g. view.php, review.php, summary.php)
-    if (strpos($urlpath, 'attempt.php') === false && strpos($urlpath, 'proctor.php') === false) {
+    // iFrame breakout for non-attempt pages (e.g. review.php, summary.php)
+    if (strpos($urlpath, 'attempt.php') === false && strpos($urlpath, 'startattempt.php') === false && strpos($urlpath, 'view.php') === false && strpos($urlpath, 'proctor.php') === false) {
         $js = "
             if (window !== window.top) {
                 window.top.location.href = window.location.href; // Break out of iframe!
@@ -324,16 +324,36 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         return; // Do not load proctoring on view/review pages!
     }
     
-    // Redirect attempt.php and startattempt.php to proctor.php if NOT inside iframe
-    if (strpos($urlpath, 'attempt.php') !== false || strpos($urlpath, 'startattempt.php') !== false) {
+    // Intercept "Attempt quiz now" / "Continue" button on view.php BEFORE the timer starts
+    if (strpos($urlpath, 'view.php') !== false) {
         $proctor_url = (new moodle_url('/local/netrago/proctor.php', ['cmid' => $cmid, 'courseid' => $cm->course]))->out(false);
         $js = "
-            if (window === window.top) {
-                window.location.href = '{$proctor_url}&url=' + encodeURIComponent(window.location.href);
+            if (window !== window.top) {
+                window.top.location.href = window.location.href; // Break out of iframe!
             }
+            document.addEventListener('DOMContentLoaded', function() {
+                var forms = document.querySelectorAll('form[action*=\"startattempt.php\"], form[action*=\"attempt.php\"]');
+                forms.forEach(function(form) {
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        var targetUrl = form.action;
+                        window.location.href = '{$proctor_url}&url=' + encodeURIComponent(targetUrl);
+                    });
+                });
+            });
         ";
         $CFG->additionalhtmlhead .= "<script>{$js}</script>";
-        return; // Do not load proctoring.js inside the iframe!
+        return; // Do not load proctoring.js inside view.php!
+    }
+    
+    // If inside iframe on attempt.php or startattempt.php, do NOT redirect to proctor.php!
+    // We want the attempt to load natively inside the iframe.
+    if (strpos($urlpath, 'attempt.php') !== false || strpos($urlpath, 'startattempt.php') !== false) {
+        if (strpos($urlpath, 'startattempt.php') !== false) {
+            // Force the confirmation modal to fit in the iframe if needed
+            $CFG->additionalhtmlhead .= "<style>body { background: transparent !important; } .moodle-dialogue-base { left: 50% !important; transform: translateX(-50%) !important; }</style>";
+        }
+        return; // Stop here. The iframe should NOT load the AMD script for NetraGo proctoring.
     }
     
     // If we are here, we must be on proctor.php. Load proctoring.js!
