@@ -113,7 +113,10 @@
             <div class="netrago-info-box" style="margin-bottom: 15px;">
                 <strong><i class="fa fa-shield"></i> Active Restrictions by Your Teacher:</strong>
                 <ul style="margin-top: 8px;">
-                    {{#requirecamera}}<li><strong>Webcam Tracking:</strong> Snapshots of your face will be taken periodically to detect multiple people or absence.</li>{{/requirecamera}}
+                    {{#requirecamera}}
+                    <li><strong>Webcam Tracking:</strong> Snapshots of your face will be taken periodically to detect multiple people or absence.</li>
+                    <li><strong>Virtual Cameras Prohibited:</strong> OBS, ManyCam, XSplit, or any virtual/emulated webcams will be automatically blocked.</li>
+                    {{/requirecamera}}
                     {{#requireaudio}}<li><strong>Audio Monitoring:</strong> Ambient noise and conversations will be continuously monitored.</li>{{/requireaudio}}
                     {{#requirescreencapture}}<li><strong>Screen Sharing:</strong> You must share your entire screen. Snapshots will be taken upon suspicious activity.</li>{{/requirescreencapture}}
                     {{#requirefullscreen}}<li><strong>Fullscreen Enforced:</strong> You cannot exit fullscreen mode during the attempt.</li>{{/requirefullscreen}}
