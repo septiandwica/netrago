@@ -72,6 +72,7 @@ $config = [
     'attempt_url' => $url
 ];
 
+$requirekyc = isset($settings->requirekyc) ? $settings->requirekyc : 1;
 $requires_password = false;
 if ($cm->modname === 'quiz') {
     $quiz = $DB->get_record('quiz', ['id' => $cm->instance], 'password', IGNORE_MISSING);
