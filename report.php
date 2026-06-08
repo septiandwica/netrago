@@ -202,17 +202,28 @@ if ($userid == 0) {
             $left_test++;
         }
         
+        $is_screen_log = (strpos(strtolower($log->eventtype), 'screen') !== false || strpos($log->eventtype, 'devtools') !== false || strpos($log->eventtype, 'fullscreen') !== false);
+        
+        $is_suspicious_event = false;
+        if (strpos($log->eventtype, 'violation') !== false || strpos(strtolower($log->eventtype), 'not found') !== false || strpos(strtolower($log->eventtype), 'unrecognized') !== false) {
+            $is_suspicious_event = true;
+        } else if (strpos($log->eventtype, 'tab_switch') !== false || strpos($log->eventtype, 'focus_loss') !== false) {
+            if ($is_screen_log) {
+                $is_suspicious_event = true;
+            }
+        }
+        
         $log_data = [
             'time_str' => userdate($log->timecreated, '%H:%M'),
             'imagedata' => $log->imagedata,
-            'is_susp' => (strpos($log->eventtype, 'violation') !== false || strpos($log->eventtype, 'not found') !== false || strpos($log->eventtype, 'tab_switch') !== false) ? 'suspicious' : '',
+            'is_susp' => $is_suspicious_event ? 'suspicious' : '',
             'event_raw' => s($log->eventtype),
             'event_clean' => s(ucwords(str_replace('_', ' ', $log->eventtype)))
         ];
         
         if (empty($log->imagedata)) continue;
         
-        if (strpos($log->eventtype, 'Screen') !== false || strpos($log->eventtype, 'screen') !== false || strpos($log->eventtype, 'devtools') !== false || strpos($log->eventtype, 'fullscreen') !== false) {
+        if ($is_screen_log) {
             $screen_logs[] = $log_data;
         } else {
             $camera_logs[] = $log_data;
