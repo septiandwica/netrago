@@ -133,7 +133,7 @@ $css = "
                 <div class='netrago-spinner' id='nf-loading-spinner'></div>
                 <h2 id='nf-loading-text'>Initializing Session...</h2>
                 <p id='nf-loading-desc'>Please wait while we prepare your proctoring environment.</p>
-                <button id='nf-btn-start-setup' class='netrago-btn' style='margin-top:20px;' onclick='this.disabled=true; this.innerHTML="<i class=\"fa fa-spinner fa-spin\"></i> Starting camera..."; document.dispatchEvent(new Event("netrago_start_clicked"));'><i class='fa fa-play'></i> Start Setup</button>
+                <button id='nf-btn-start-setup' class='netrago-btn' style='margin-top:20px;' onclick='this.disabled=true; this.innerHTML=\"<i class=\\\"fa fa-spinner fa-spin\\\"></i> Starting camera...\"; document.dispatchEvent(new Event(\"netrago_start_clicked\"));'><i class='fa fa-play'></i> Start Setup</button>
             </div>
             
             <!-- KYC Video Container -->
