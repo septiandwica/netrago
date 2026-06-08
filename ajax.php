@@ -19,22 +19,8 @@ require_login($cm->course, true, $cm);
 require_sesskey();
 $context = context_module::instance($cm->id);
 
-// Allowlist: only accept known event types to prevent log poisoning.
-$allowed_events = [
-    'snapshot', 'tab_switch', 'focus_loss', 'fullscreen_exit',
-    'tab_switch_snapshot', 'fullscreen_exit_snapshot',
-    'blocked_key', 'devtools',
-    'face_violation_1', 'face_violation_2', 'face_violation_3',
-    'face_violation_1_screen', 'face_violation_2_screen', 'face_violation_3_screen',
-    'snapshot_screen',
-];
-if (!in_array($eventtype, $allowed_events)) {
-    echo json_encode(['error' => 'Invalid event type']);
-    die();
-}
-
-// Reject oversized image payloads (~200KB base64 cap).
-if (strlen($imagedata) > 200000) {
+// Reject oversized image payloads (~2MB base64 cap for screen snapshots).
+if (strlen($imagedata) > 2000000) {
     echo json_encode(['error' => 'Image data too large']);
     die();
 }
