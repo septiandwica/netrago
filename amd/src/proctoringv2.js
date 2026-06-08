@@ -394,8 +394,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     // Only log once per minute to avoid spamming if they keep it open
                     if (!self.devToolsLogged) {
                         self.devToolsLogged = true;
-                        self.takeSnapshot('devtools');
-                        self.takeScreenSnapshot('devtools');
+                        self.handleViolation('DevTools or Browser Console opened.');
                         setTimeout(() => { self.devToolsLogged = false; }, 60000);
                     }
                 }
@@ -424,11 +423,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             document.addEventListener('visibilitychange', function() {
                 if (!self.proctoringStarted) return;
                 if (document.hidden) {
-                    self.takeSnapshot('tab_switch');
-                    // Delay screen capture to allow the new tab/window to render on screen
-                    setTimeout(function() {
-                        self.takeScreenSnapshot('tab_switch');
-                    }, 1000);
+                    self.handleViolation('Tab switching (quiz tab hidden).');
                 }
             });
         },
@@ -437,10 +432,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             var self = this;
             window.addEventListener('blur', function() {
                 if (!self.proctoringStarted) return;
-                self.takeSnapshot('focus_loss');
-                setTimeout(function() {
-                    self.takeScreenSnapshot('focus_loss');
-                }, 1000);
+                self.handleViolation('Tab switching (focus loss).');
             });
         },
 
