@@ -741,15 +741,20 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     window.onbeforeunload = null;
                 }
             } else {
-                // Obscure screen with blur
-                document.body.style.filter = 'blur(10px)';
+                // Obscure quiz frame with blur
+                var quizFrame = document.getElementById('netrago-quiz-frame');
+                if (quizFrame) {
+                    quizFrame.style.filter = 'blur(10px)';
+                }
                 var warningText = 'WARNING: ' + reason + '<br>Please look at the camera immediately.';
                 if (this.config.maxstrikes > 0) {
                     warningText = 'WARNING ' + this.strikes + '/' + this.config.maxstrikes + ': ' + reason + '<br>Please look at the camera immediately.';
                 }
                 notification.alert('NetraGo Warning', warningText, 'I Understand');
                 setTimeout(function() {
-                    document.body.style.filter = 'none';
+                    if (quizFrame) {
+                        quizFrame.style.filter = 'none';
+                    }
                 }, 3000);
             }
         },
