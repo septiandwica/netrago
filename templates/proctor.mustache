@@ -103,7 +103,7 @@
                     <li>A report will be shown to your teacher once you finish your quiz attempt.</li>
                 </ul>
             </div>
-            <button id="nf-btn-next-1" class="netrago-btn" onclick="if(window.netragoProctorInstance) window.netragoProctorInstance.moveToStep2();">Continue</button>
+            <button id="nf-btn-next-1" class="netrago-btn">Continue</button>
         </div>
 
         <!-- Step 2: Screen Share -->
@@ -113,7 +113,7 @@
             <div class="netrago-info-box" style="background: #fff3cd; border-color: #ffeeba; color: #856404;">
                 <i class="fa fa-warning"></i> You <strong>MUST</strong> select the <strong>Entire Screen</strong> option. Sharing a window or tab is prohibited.
             </div>
-            <button id="nf-btn-share-screen" class="netrago-btn" onclick="if(window.netragoProctorInstance) window.netragoProctorInstance.handleScreenShareClick(this);"><i class="fa fa-desktop"></i> Allow Share Screen</button>
+            <button id="nf-btn-share-screen" class="netrago-btn"><i class="fa fa-desktop"></i> Allow Share Screen</button>
         </div>
 
         <!-- Step 3: Consent -->
@@ -125,12 +125,12 @@
             </div>
             <p>Please review the proctoring agreement below.</p>
             <div class="netrago-checkbox-group">
-                <input type="checkbox" id="nf-consent-checkbox" onchange="document.getElementById('nf-btn-start-attempt').disabled = !this.checked;">
+                <input type="checkbox" id="nf-consent-checkbox">
                 <label for="nf-consent-checkbox">
                     I provide consent to record, process and store the proctoring data, including screenshots of my screen and photos of myself, and share them with my teacher.
                 </label>
             </div>
-            <button id="nf-btn-start-attempt" class="netrago-btn" disabled onclick="if(window.netragoProctorInstance) window.netragoProctorInstance.handleStartAttemptClick(this);">Start attempt</button>
+            <button id="nf-btn-start-attempt" class="netrago-btn" disabled>Start attempt</button>
         </div>
 
         <!-- Warning Step (Shown briefly before attempt starts) -->
