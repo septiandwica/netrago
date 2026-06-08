@@ -13,6 +13,19 @@ if ($hassiteconfig) {
     $settings = new admin_settingpage('local_netrago', get_string('pluginname', 'local_netrago'));
     $ADMIN->add('localplugins', $settings);
 
+    // Copyright & Information Header
+    $info_html = '<div style="background-color: #f8f9fa; padding: 15px; border-left: 5px solid #0052cc; border-radius: 4px; margin-bottom: 20px;">
+        <h4 style="margin-top: 0; color: #0052cc;">NetraGo Proctoring System</h4>
+        <p style="margin-bottom: 5px;">&copy; ' . date('Y') . ' Self-hosted and maintained by <strong><a href="https://samastanuswantara.com" target="_blank">Tateta</a></strong>.</p>
+        <p style="margin-bottom: 0;"><strong>Exclusive for President University</strong> (PRESOLA).</p>
+    </div>';
+    
+    $settings->add(new admin_setting_heading(
+        'local_netrago/info_heading',
+        '',
+        $info_html
+    ));
+
     // Master Switch
     $settings->add(new admin_setting_configcheckbox(
         'local_netrago/enable_plugin',
