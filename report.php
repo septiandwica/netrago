@@ -224,12 +224,12 @@ if ($userid == 0) {
     
     // Info Box
     echo '<div class="card mb-4"><div class="card-body">';
-    echo '<p><strong>Proctoring settings:</strong> Activity, ' . implode(', ', $settings_arr) . '</p>';
-    echo '<p><strong>Face presence:</strong> ' . $face_presence . '%</p>';
-    echo '<p><strong>Average faces per frame:</strong> ' . ($face_presence > 50 ? 'Single face' : 'No face') . '</p>';
-    echo '<p><strong>Left test:</strong> ' . $left_test . '</p>';
-    echo '<p><strong>Screenshots:</strong> ' . $suspicious_count . ' suspicious</p>';
-    echo '<p class="text-muted small"><i class="fa fa-info-circle"></i> Camera tracking and Screen tracking are displayed in chronological timelines below.</p>';
+    echo '<p><strong title="The active tracking features enforced during this attempt">Proctoring settings <i class="fa fa-question-circle text-info"></i>:</strong> Activity, ' . implode(', ', $settings_arr) . '</p>';
+    echo '<p><strong title="Percentage of camera snapshots where a human face was successfully detected">Face presence <i class="fa fa-question-circle text-info"></i>:</strong> ' . $face_presence . '%</p>';
+    echo '<p><strong title="Average number of faces detected in the camera frames. Indicates if multiple people were present.">Average faces per frame <i class="fa fa-question-circle text-info"></i>:</strong> ' . ($face_presence > 50 ? 'Single face' : 'No face') . '</p>';
+    echo '<p><strong title="Number of times the student switched tabs, minimized the browser, or clicked outside the quiz window.">Left test <i class="fa fa-question-circle text-info"></i>:</strong> ' . $left_test . '</p>';
+    echo '<p><strong title="Number of camera snapshots containing violations (e.g. face not matching KYC identity, multiple faces, or no face). Does not include screen tab switches.">Screenshots <i class="fa fa-question-circle text-info"></i>:</strong> ' . $suspicious_count . ' suspicious</p>';
+    echo '<p class="text-muted small mt-3"><i class="fa fa-info-circle"></i> Camera tracking and Screen tracking are displayed in chronological timelines below.</p>';
     echo '</div></div>';
     
     // Timelines CSS
