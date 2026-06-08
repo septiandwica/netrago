@@ -117,13 +117,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     document.getElementById('nf-step-3').classList.remove('active');
                     document.getElementById('nf-step-warning').classList.add('active');
                     
-                    // Populate hidden password field
-                    var pwdInput = document.getElementById('nf-quiz-password');
-                    var hiddenPwd = document.getElementById('nf-hidden-password');
-                    if (pwdInput && hiddenPwd) {
-                        hiddenPwd.value = pwdInput.value;
-                    }
-                    
+
                     // Init camera if required
                     self.startProctoringAndUnlock();
                 });

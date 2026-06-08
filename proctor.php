@@ -197,13 +197,7 @@ $css = "
             <!-- Step 1: Password & Info -->
             <div id='nf-step-1' class='netrago-step'>
                 <h2>Start attempt</h2>
-                " . ($requires_password ? "
-                <p>To attempt this quiz you need to know the quiz password.</p>
-                <div class='netrago-input-group'>
-                    <label for='nf-quiz-password'>Quiz password</label>
-                    <input type='password' id='nf-quiz-password' class='netrago-input' placeholder='Click to enter text'>
-                </div>
-                " : "") . "
+                <p>Welcome to the proctored quiz. Please follow the instructions to setup your proctoring environment before starting the attempt.</p>
                 <div class='netrago-info-box'>
                     <strong>Camera and screen tracking is enabled</strong>
                     <ul>
@@ -252,14 +246,7 @@ $css = "
         </div>
     </div>
     
-    <!-- Hidden form to submit password to Moodle native startattempt.php -->
-    <form id='nf-hidden-start-form' method='POST' action='" . new moodle_url('/mod/quiz/startattempt.php') . "' target='netrago-quiz-iframe'>
-        <input type='hidden' name='cmid' value='{$cmid}'>
-        <input type='hidden' name='sesskey' value='" . sesskey() . "'>
-        <input type='hidden' name='quizpassword' id='nf-hidden-password' value=''>
-        <input type='hidden' name='_qf__mod_quiz_pre_attempt_form' value='1'>
-        <input type='hidden' name='submitbutton' value='Start attempt'>
-    </form>
+
 ";
 $CFG->additionalhtmlhead .= $css;
 
