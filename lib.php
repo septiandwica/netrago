@@ -238,6 +238,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         return;
     }
 
+    $cm = get_coursemodule_from_id('', $cmid, 0, false, MUST_EXIST);
     $context = context_module::instance($cmid);
 
     // Check if this module has NetraGo enabled.
