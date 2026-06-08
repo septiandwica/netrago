@@ -233,7 +233,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             }
 
             // Submit the hidden form targeting the iframe (this includes the Moodle password!)
-            var startForm = document.getElementById('nf-attempt-form');
+            var startForm = document.getElementById('nf-hidden-start-form');
             if (startForm) {
                 startForm.submit();
             } else {
