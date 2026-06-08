@@ -93,10 +93,6 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         bindEvents: function() {
             var self = this;
 
-            document.addEventListener('netrago_start_clicked', function() {
-                self.startCamera();
-            });
-
             // btn-agree-intro removed, starts automatically after models load.
 
             $('#btn-selfie').on('click', async function() {

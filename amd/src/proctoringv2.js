@@ -88,19 +88,23 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
             this.bindSubmitListener();
 
-            // Show step 1 OR wait for KYC
-            if (window.netragoKycCompleted || !this.config.requirecamera) {
+            var self = this;
+            document.addEventListener('netrago_start_clicked', function() {
                 document.getElementById('nf-step-loading').classList.remove('active');
                 document.getElementById('nf-step-1').classList.add('active');
-            } else {
-                // kyc.js will handle the UI until KYC is done
-                var self = this;
-                $(document).on('netrago_kyc_done', function() {
-                    $('.netrago-step').removeClass('active').css('display', '');
-                    document.getElementById('nf-step-1').classList.add('active');
-                    self.bindPreflightEvents();
-                });
-            }
+                self.bindPreflightEvents();
+            });
+
+            $(document).on('netrago_kyc_done', function() {
+                $('.netrago-step').removeClass('active').css('display', '');
+                var step2 = document.getElementById('nf-step-2');
+                var step3 = document.getElementById('nf-step-3');
+                if (self.config.requirescreencapture == 1) {
+                    if (step2) step2.classList.add('active');
+                } else {
+                    if (step3) step3.classList.add('active');
+                }
+            });
 
             this.bindPreflightEvents();
         },
@@ -115,14 +119,20 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     if (e) e.preventDefault();
                     
                     var step1 = document.getElementById('nf-step-1');
-                    var step2 = document.getElementById('nf-step-2');
-                    var step3 = document.getElementById('nf-step-3');
-                    
                     if (step1) step1.classList.remove('active');
-                    if (self.config.requirescreencapture == 1) {
-                        if (step2) step2.classList.add('active');
+                    
+                    if (self.config.requirekyc == 1 && !window.netragoKycCompleted) {
+                        if (window.netragoKycInstance) {
+                            window.netragoKycInstance.startCamera();
+                        }
                     } else {
-                        if (step3) step3.classList.add('active');
+                        var step2 = document.getElementById('nf-step-2');
+                        var step3 = document.getElementById('nf-step-3');
+                        if (self.config.requirescreencapture == 1) {
+                            if (step2) step2.classList.add('active');
+                        } else {
+                            if (step3) step3.classList.add('active');
+                        }
                     }
                 };
             }
