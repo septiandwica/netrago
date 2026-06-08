@@ -268,7 +268,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     }
                     self.faceLoopId = setInterval(function() {
                         self.verifyFaceLoop();
-                    }, 15000);
+                    }, 3000);
                 }
 
                 setTimeout(function() {
@@ -548,7 +548,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 var isFS = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
                 if (!isFS) {
                     if (window.isSubmitting) return; // Allow exit during submit
-                    self.logEvent('fullscreen_exit');
+                    self.handleViolation('Fullscreen exit detected.');
                     if (self.config.requirecamera == 1 && self.videoElement) {
                         self.takeSnapshot('fullscreen_exit_snapshot');
                     }
@@ -578,7 +578,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 if (!self.proctoringStarted) return;
                 if (document.visibilityState === 'hidden') {
                     if (window.isSubmitting) return; // Allow exit during submit
-                    self.logEvent('tab_switch');
+                    self.handleViolation('Tab switching or application backgrounding detected.');
                     
                     // Delay screenshot by 1s to allow video stream to catch up to the new tab
                     setTimeout(function() {
@@ -594,7 +594,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             window.addEventListener('blur', function() {
                 if (!self.proctoringStarted) return;
                 if (window.isSubmitting) return; // Allow exit during submit
-                self.logEvent('focus_loss');
+                self.handleViolation('Focus lost (clicked outside quiz tab).');
                 
                 // Delay screenshot by 1s to capture what they are looking at
                 setTimeout(function() {
