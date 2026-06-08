@@ -235,11 +235,28 @@ if ($userid == 0) {
     // Timelines CSS
     echo '<style>
         .timeline-row { display: flex; overflow-x: auto; padding-bottom: 15px; margin-bottom: 30px; gap: 15px; }
-        .timeline-item { min-width: 150px; text-align: center; }
+        .timeline-item { min-width: 150px; text-align: center; position: relative; }
         .timeline-time { font-size: 14px; color: #555; margin-bottom: 5px; display: block; font-weight: bold; }
-        .timeline-img { width: 150px; height: 100px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; }
+        .timeline-img { width: 150px; height: 100px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
         .timeline-img.suspicious { border: 2px solid #dc3545; }
+        .timeline-pill { position: absolute; bottom: 5px; left: 5px; right: 5px; background: rgba(0,0,0,0.7); color: white; font-size: 11px; padding: 3px 5px; border-radius: 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
+        .timeline-pill.suspicious { background: #dc3545; font-weight: bold; }
+        #netrago-lightbox { display: none; position: fixed; z-index: 9999999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.85); text-align: center; }
+        #netrago-lightbox-img { margin: auto; display: inline-block; max-width: 90%; max-height: 90vh; margin-top: 5vh; border-radius: 4px; box-shadow: 0 5px 25px rgba(0,0,0,0.5); }
+        #netrago-lightbox-close { position: absolute; top: 20px; right: 40px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; }
     </style>';
+    
+    // Lightbox HTML & JS
+    echo '<div id="netrago-lightbox" onclick="this.style.display=\'none\'">
+            <span id="netrago-lightbox-close">&times;</span>
+            <img id="netrago-lightbox-img">
+          </div>';
+    echo '<script>
+            function showNetragoPreview(src) {
+                document.getElementById("netrago-lightbox-img").src = src;
+                document.getElementById("netrago-lightbox").style.display = "block";
+            }
+          </script>';
     
     // Camera Tracking Timeline
     echo html_writer::tag('h4', 'Camera tracking');
@@ -253,7 +270,8 @@ if ($userid == 0) {
             $time_str = userdate($log->timecreated, '%H:%M');
             echo '<div class="timeline-item">';
             echo "<span class='timeline-time'>{$time_str}</span>";
-            echo "<a href='{$log->imagedata}' target='_blank'><img src='{$log->imagedata}' class='timeline-img {$is_susp}' title='" . s($log->eventtype) . "'></a>";
+            echo "<img src='{$log->imagedata}' class='timeline-img {$is_susp}' onclick='showNetragoPreview(this.src)' title='" . s($log->eventtype) . "'>";
+            echo "<div class='timeline-pill {$is_susp}' title='" . s($log->eventtype) . "'>" . s(ucwords(str_replace('_', ' ', $log->eventtype))) . "</div>";
             echo '</div>';
         }
     }
@@ -271,7 +289,8 @@ if ($userid == 0) {
             $time_str = userdate($log->timecreated, '%H:%M');
             echo '<div class="timeline-item">';
             echo "<span class='timeline-time'>{$time_str}</span>";
-            echo "<a href='{$log->imagedata}' target='_blank'><img src='{$log->imagedata}' class='timeline-img {$is_susp}' title='" . s($log->eventtype) . "'></a>";
+            echo "<img src='{$log->imagedata}' class='timeline-img {$is_susp}' onclick='showNetragoPreview(this.src)' title='" . s($log->eventtype) . "'>";
+            echo "<div class='timeline-pill {$is_susp}' title='" . s($log->eventtype) . "'>" . s(ucwords(str_replace('_', ' ', $log->eventtype))) . "</div>";
             echo '</div>';
         }
     }
