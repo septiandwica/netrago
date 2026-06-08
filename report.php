@@ -157,10 +157,23 @@ if ($userid == 0) {
     
     $settings = $DB->get_record('local_netrago', ['cmid' => $cmid]);
     $settings_arr = [];
-    if ($settings->requirecamera) $settings_arr[] = 'Camera';
-    if ($settings->requirescreencapture ?? 0) $settings_arr[] = 'Screen';
-    if ($settings->requirefullscreen || $settings->disablefocusloss || $settings->disabledevtools) $settings_arr[] = 'Forced Tracking';
-    $context_data['proctoring_settings'] = implode(', ', $settings_arr);
+    
+    // Check if features are both globally enabled and locally required
+    $camera_enabled = get_config('local_netrago', 'allow_camera') ? $settings->requirecamera : 0;
+    $screen_enabled = get_config('local_netrago', 'allow_screencapture') ? ($settings->requirescreencapture ?? 0) : 0;
+    $fs_enabled = get_config('local_netrago', 'allow_fullscreen') ? $settings->requirefullscreen : 0;
+    $focus_enabled = get_config('local_netrago', 'allow_focusloss') ? $settings->disablefocusloss : 0;
+    $devtools_enabled = get_config('local_netrago', 'allow_devtools') ? $settings->disabledevtools : 0;
+    $copypaste_enabled = get_config('local_netrago', 'allow_copypaste') ? $settings->disablecopypaste : 0;
+    
+    if ($camera_enabled) $settings_arr[] = 'Camera';
+    if ($screen_enabled) $settings_arr[] = 'Screen';
+    if ($fs_enabled) $settings_arr[] = 'Fullscreen Enforced';
+    if ($focus_enabled) $settings_arr[] = 'Tab Switching Blocked';
+    if ($copypaste_enabled) $settings_arr[] = 'Copy-Paste Blocked';
+    if ($devtools_enabled) $settings_arr[] = 'DevTools Blocked';
+    
+    $context_data['proctoring_settings'] = empty($settings_arr) ? 'None' : implode(', ', $settings_arr);
     
     if ($attempt_num > 0 && $cm->modname == 'quiz') {
         $quiz = $DB->get_record('quiz', ['id' => $cm->instance]);
