@@ -20,6 +20,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             this.config = config;
             this.proctoringStarted = false;
             
+            this.initOfflineVault();
+            
             if (window.screen && window.screen.isExtended === undefined) {
                 notification.alert('Browser Recommendation', 'You are using a browser that does not fully support NetraGo Advanced Security (e.g., Safari or Firefox). For the best experience and to avoid false violation flags, we strongly recommend using Google Chrome or Microsoft Edge.', 'I Understand');
             }
@@ -79,6 +81,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             }
             
             this.monitorMultipleDisplays();
+            
+            this.syncOfflineVault();
 
             this.bindSubmitListener();
 
@@ -748,12 +752,59 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         },
 
         logEvent: function(eventType, imageData = '') {
-            $.post(this.config.ajaxurl, {
+            var self = this;
+            var payload = {
                 cmid: this.config.cmid,
                 eventtype: eventType,
                 imagedata: imageData,
                 sesskey: M.cfg.sesskey
+            };
+            
+            $.post(this.config.ajaxurl, payload).fail(function() {
+                if (self.db) {
+                    var tx = self.db.transaction('logs', 'readwrite');
+                    var store = tx.objectStore('logs');
+                    store.add({ payload: payload, timestamp: Date.now() });
+                }
             });
+        },
+        
+        initOfflineVault: function() {
+            var self = this;
+            var request = indexedDB.open("NetraGoVault", 1);
+            request.onupgradeneeded = function(e) {
+                var db = e.target.result;
+                if (!db.objectStoreNames.contains('logs')) {
+                    db.createObjectStore('logs', { keyPath: 'id', autoIncrement: true });
+                }
+            };
+            request.onsuccess = function(e) {
+                self.db = e.target.result;
+            };
+        },
+        
+        syncOfflineVault: function() {
+            var self = this;
+            setInterval(function() {
+                if (!navigator.onLine || !self.db) return;
+                
+                var tx = self.db.transaction('logs', 'readonly');
+                var store = tx.objectStore('logs');
+                var request = store.getAll();
+                
+                request.onsuccess = function() {
+                    var logs = request.result;
+                    if (logs && logs.length > 0) {
+                        logs.forEach(function(logItem) {
+                            $.post(self.config.ajaxurl, logItem.payload).done(function() {
+                                // If successfully synced, delete from vault
+                                var delTx = self.db.transaction('logs', 'readwrite');
+                                delTx.objectStore('logs').delete(logItem.id);
+                            });
+                        });
+                    }
+                };
+            }, 10000);
         }
     };
 
