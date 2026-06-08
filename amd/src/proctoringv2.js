@@ -53,8 +53,10 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     var parsed = JSON.parse(this.config.descriptor);
                     if (Array.isArray(parsed)) {
                         this.baselineDescriptor = new Float32Array(parsed);
+                    } else if (typeof parsed === 'object' && parsed !== null) {
+                        this.baselineDescriptor = new Float32Array(Object.values(parsed));
                     } else {
-                        console.error("KYC Descriptor is not an array:", parsed);
+                        console.error("KYC Descriptor is not an array or object:", parsed);
                     }
                 } catch (e) {
                     console.error("Invalid KYC descriptor data from database:", e);
@@ -687,6 +689,9 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             else if (reason.indexOf('Audio') !== -1) reasonCode = 'audio_noise_violation_' + this.strikes;
             else if (reason.indexOf('Multiple displays') !== -1) reasonCode = 'multi_display_violation_' + this.strikes;
             else if (reason.indexOf('DevTools') !== -1) reasonCode = 'devtools_violation_' + this.strikes;
+            else if (reason.indexOf('Face not found') !== -1) reasonCode = 'face_not_found_violation_' + this.strikes;
+            else if (reason.indexOf('Unrecognized face') !== -1) reasonCode = 'unrecognized_face_violation_' + this.strikes;
+            else if (reason.indexOf('Multiple faces') !== -1) reasonCode = 'multiple_faces_violation_' + this.strikes;
             
             this.takeSnapshot(reasonCode);
             this.takeScreenSnapshot('screen_' + reasonCode);
