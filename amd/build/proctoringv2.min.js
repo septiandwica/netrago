@@ -20,6 +20,10 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             this.config = config;
             this.proctoringStarted = false;
             
+            if (window.screen && window.screen.isExtended === undefined) {
+                notification.alert('Browser Recommendation', 'You are using a browser that does not fully support NetraGo Advanced Security (e.g., Safari or Firefox). For the best experience and to avoid false violation flags, we strongly recommend using Google Chrome or Microsoft Edge.', 'I Understand');
+            }
+            
             if (window.screen && window.screen.isExtended) {
                 document.getElementById('netrago-preflight-container').style.display = 'block';
                 document.getElementById('netrago-quiz-frame').style.display = 'none';

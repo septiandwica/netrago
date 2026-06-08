@@ -14,6 +14,10 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         init: function(config) {
             this.config = config;
             
+            if (window.screen && window.screen.isExtended === undefined) {
+                notification.alert('Browser Recommendation', 'You are using a browser that does not fully support NetraGo Advanced Security (e.g., Safari or Firefox). For the best experience and to avoid false violation flags, we strongly recommend using Google Chrome or Microsoft Edge.', 'I Understand');
+            }
+            
             if (window.screen && window.screen.isExtended) {
                 $('#nf-loading-spinner').hide();
                 $('#nf-loading-text').text('Multiple Displays Detected');
