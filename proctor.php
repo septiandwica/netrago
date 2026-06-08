@@ -72,6 +72,14 @@ $config = [
     'attempt_url' => $url
 ];
 
+$requires_password = false;
+if ($cm->modname === 'quiz') {
+    $quiz = $DB->get_record('quiz', ['id' => $cm->instance], 'password', IGNORE_MISSING);
+    if ($quiz && !empty($quiz->password)) {
+        $requires_password = true;
+    }
+}
+
 // No-JS Fallback / Loading Overlay
 $warningmsg = get_string('js_required_warning', 'local_netrago');
 $css = "
@@ -169,11 +177,13 @@ $css = "
             <!-- Step 1: Password & Info -->
             <div id='nf-step-1' class='netrago-step'>
                 <h2>Start attempt</h2>
+                " . ($requires_password ? "
                 <p>To attempt this quiz you need to know the quiz password.</p>
                 <div class='netrago-input-group'>
                     <label for='nf-quiz-password'>Quiz password</label>
                     <input type='password' id='nf-quiz-password' class='netrago-input' placeholder='Click to enter text'>
                 </div>
+                " : "") . "
                 <div class='netrago-info-box'>
                     <strong>Camera and screen tracking is enabled</strong>
                     <ul>
