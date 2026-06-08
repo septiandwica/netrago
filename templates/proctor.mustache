@@ -103,7 +103,7 @@
                     <li>A report will be shown to your teacher once you finish your quiz attempt.</li>
                 </ul>
             </div>
-            <button id="nf-btn-next-1" class="netrago-btn">Continue</button>
+            <button type="button" id="nf-btn-next-1" class="netrago-btn" style="position:relative; z-index:999999; pointer-events:auto;" onmousedown="document.getElementById('nf-step-1').style.display='none'; if(document.getElementById('nf-step-2')) { document.getElementById('nf-step-2').style.display='block'; } else { document.getElementById('nf-step-3').style.display='block'; }">Continue</button>
         </div>
 
         <!-- Step 2: Screen Share -->
@@ -113,7 +113,7 @@
             <div class="netrago-info-box" style="background: #fff3cd; border-color: #ffeeba; color: #856404;">
                 <i class="fa fa-warning"></i> You <strong>MUST</strong> select the <strong>Entire Screen</strong> option. Sharing a window or tab is prohibited.
             </div>
-            <button id="nf-btn-share-screen" class="netrago-btn"><i class="fa fa-desktop"></i> Allow Share Screen</button>
+            <button type="button" id="nf-btn-share-screen" class="netrago-btn" style="position:relative; z-index:999999; pointer-events:auto;" onmousedown="this.disabled=true; this.innerHTML='<i class=\'fa fa-spinner fa-spin\'></i> Requesting Access...'; if(window.netragoProctorInstance) window.netragoProctorInstance.initScreenCapture();"><i class="fa fa-desktop"></i> Allow Share Screen</button>
         </div>
 
         <!-- Step 3: Consent -->
@@ -130,7 +130,7 @@
                     I provide consent to record, process and store the proctoring data, including screenshots of my screen and photos of myself, and share them with my teacher.
                 </label>
             </div>
-            <button id="nf-btn-start-attempt" class="netrago-btn" disabled>Start attempt</button>
+            <button type="button" id="nf-btn-start-attempt" class="netrago-btn" disabled style="position:relative; z-index:999999; pointer-events:auto;" onmousedown="if(this.disabled) return; document.getElementById('nf-step-3').style.display='none'; document.getElementById('nf-step-warning').style.display='block'; if(window.netragoProctorInstance) window.netragoProctorInstance.startProctoringAndUnlock();">Start attempt</button>
         </div>
 
         <!-- Warning Step (Shown briefly before attempt starts) -->

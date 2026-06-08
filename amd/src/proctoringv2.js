@@ -224,8 +224,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 }, 3000);
             }
 
-            // Submit the hidden form targeting the iframe
-            var startForm = document.getElementById('nf-hidden-start-form');
+            // Submit the hidden form targeting the iframe (this includes the Moodle password!)
+            var startForm = document.getElementById('nf-attempt-form');
             if (startForm) {
                 startForm.submit();
             } else {
