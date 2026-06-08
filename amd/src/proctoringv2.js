@@ -236,6 +236,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         
         startProctoringAndUnlock: function() {
             var self = this;
+            if (this._startAttemptFired) return;
+            this._startAttemptFired = true;
             
             if (this.config.requirecamera == 1 && this.stream) {
                 this.canvasElement = document.createElement('canvas');
@@ -732,6 +734,13 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
         handleViolation: function(reason) {
             var self = this;
+            
+            var now = Date.now();
+            if (this.lastViolationTime && (now - this.lastViolationTime < 14000)) {
+                return; // Debounce violations to prevent spamming
+            }
+            this.lastViolationTime = now;
+            
             this.strikes++;
             
             var reasonCode = 'violation_' + this.strikes;
