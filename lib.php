@@ -174,7 +174,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
             $sql = "SELECT l.userid, COUNT(l.id) as vcount 
                     FROM {local_netrago_logs} l
                     JOIN {course_modules} cm ON cm.id = l.cmid
-                    WHERE cm.course = ?
+                    WHERE cm.course = ? AND (l.eventtype LIKE '%violation%' OR l.eventtype LIKE '%focus_loss%' OR l.eventtype LIKE '%tab_switch%')
                     GROUP BY l.userid";
             $violators = $DB->get_records_sql($sql, [$courseid]);
             
@@ -256,7 +256,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
     if (has_capability('moodle/course:manageactivities', $context)) {
         if (strpos($urlpath, '/mod/') !== false && strpos($urlpath, 'report.php') !== false) {
             // Inject Badges to Grading Table
-            $violators = $DB->get_records_sql("SELECT userid, COUNT(id) as vcount FROM {local_netrago_logs} WHERE cmid = ? GROUP BY userid", [$cmid]);
+            $violators = $DB->get_records_sql("SELECT userid, COUNT(id) as vcount FROM {local_netrago_logs} WHERE cmid = ? AND (eventtype LIKE '%violation%' OR eventtype LIKE '%focus_loss%' OR eventtype LIKE '%tab_switch%') GROUP BY userid", [$cmid]);
             $violator_data = [];
             foreach ($violators as $v) {
                 $violator_data[$v->userid] = $v->vcount;
