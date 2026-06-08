@@ -359,25 +359,21 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         blockKeyboardShortcuts: function() {
             var self = this;
             document.addEventListener('keydown', function(event) {
+                if (!self.proctoringStarted) return;
                 // Block F12
                 if (event.keyCode === 123) {
                     event.preventDefault();
-                    self.takeSnapshot('blocked_key');
-                    self.takeScreenSnapshot('blocked_key');
-                    notification.alert('NetraGo Warning', 'Developer tools are disabled.', 'I Understand');
+                    self.handleViolation('Developer tools shortcut (F12) detected.');
                 }
                 // Block Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
                 if (event.ctrlKey && event.shiftKey && (event.keyCode === 73 || event.keyCode === 74 || event.keyCode === 67)) {
                     event.preventDefault();
-                    self.takeSnapshot('blocked_key');
-                    self.takeScreenSnapshot('blocked_key');
+                    self.handleViolation('Developer tools shortcut detected.');
                 }
                 // Block Ctrl+P (Print)
                 if (event.ctrlKey && event.keyCode === 80) {
                     event.preventDefault();
-                    self.takeSnapshot('blocked_key');
-                    self.takeScreenSnapshot('blocked_key');
-                    notification.alert('NetraGo Warning', 'Printing is disabled.', 'I Understand');
+                    self.handleViolation('Printing shortcut detected.');
                 }
             });
         },
@@ -402,6 +398,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         },
 
         bindSubmitListener: function() {
+            var self = this;
             var frame = document.getElementById('netrago-quiz-frame');
             if (frame) {
                 frame.addEventListener('load', function() {
@@ -413,7 +410,58 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                                 window.isSubmitting = true;
                             });
                         }
+                        self.applyIframeProtections(frameDoc);
                     } catch(e) {}
+                });
+            }
+        },
+
+        applyIframeProtections: function(frameDoc) {
+            var self = this;
+            if (!frameDoc || !frameDoc.body) return;
+            
+            if (self.config.disablecopypaste == 1) {
+                frameDoc.addEventListener('contextmenu', e => e.preventDefault());
+                frameDoc.addEventListener('copy', e => e.preventDefault());
+                frameDoc.addEventListener('cut', e => e.preventDefault());
+                frameDoc.addEventListener('paste', e => e.preventDefault());
+                frameDoc.addEventListener('dragstart', e => e.preventDefault());
+                frameDoc.addEventListener('selectstart', e => e.preventDefault());
+                
+                frameDoc.body.style.webkitUserSelect = 'none';
+                frameDoc.body.style.mozUserSelect = 'none';
+                frameDoc.body.style.msUserSelect = 'none';
+                frameDoc.body.style.userSelect = 'none';
+            }
+
+            if (self.config.allow_devtools == 1) {
+                frameDoc.addEventListener('keydown', function(event) {
+                    if (!self.proctoringStarted) return;
+                    if (event.keyCode === 123) {
+                        event.preventDefault();
+                        self.handleViolation('Developer tools shortcut (F12) detected inside quiz.');
+                    }
+                    if (event.ctrlKey && event.shiftKey && (event.keyCode === 73 || event.keyCode === 74 || event.keyCode === 67)) {
+                        event.preventDefault();
+                        self.handleViolation('Developer tools shortcut detected inside quiz.');
+                    }
+                    if (event.ctrlKey && event.keyCode === 80) {
+                        event.preventDefault();
+                        self.handleViolation('Printing shortcut detected inside quiz.');
+                    }
+                });
+            }
+            
+            if (self.config.allow_focusloss == 1) {
+                frameDoc.defaultView.addEventListener('blur', function() {
+                    if (!self.proctoringStarted) return;
+                    // Only trigger if the parent is also blurred, or if they clicked outside the browser entirely
+                    // Wait 500ms to see if they just clicked between frame and parent
+                    setTimeout(function() {
+                        if (!document.hasFocus() && !frameDoc.hasFocus()) {
+                            self.handleViolation('Focus lost (clicked outside quiz).');
+                        }
+                    }, 500);
                 });
             }
         },
