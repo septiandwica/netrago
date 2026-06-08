@@ -91,7 +91,8 @@ $config = [
     'maxstrikes' => isset($settings->maxstrikes) ? $settings->maxstrikes : 3,
     'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false),
     'descriptor' => $descriptor_to_use,
-    'attempt_url' => $url
+    'attempt_url' => $url,
+    'requirekyc' => isset($settings->requirekyc) ? $settings->requirekyc : 1
 ];
 
 $requirekyc = isset($settings->requirekyc) ? $settings->requirekyc : 1;
