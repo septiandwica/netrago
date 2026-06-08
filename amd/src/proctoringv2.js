@@ -585,6 +585,40 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             var distance = faceapi.euclideanDistance(detections[0].descriptor, this.baselineDescriptor);
             if (distance > 0.60) {
                 this.handleViolation('Unrecognized face detected. Does not match KYC identity.');
+                return; // Stop further checks if identity is wrong
+            }
+            
+            // Gaze & Head Pose Tracking Heuristics
+            var landmarks = detections[0].landmarks;
+            if (landmarks) {
+                var jaw = landmarks.getJawOutline();
+                var nose = landmarks.getNose();
+                
+                var noseTip = nose[3];
+                var jawLeft = jaw[0];
+                var jawRight = jaw[16];
+                var jawBottom = jaw[8];
+                var noseBridge = nose[0];
+                
+                // 1. Yaw (Looking Left / Right)
+                var distLeft = Math.sqrt(Math.pow(noseTip.x - jawLeft.x, 2) + Math.pow(noseTip.y - jawLeft.y, 2));
+                var distRight = Math.sqrt(Math.pow(noseTip.x - jawRight.x, 2) + Math.pow(noseTip.y - jawRight.y, 2));
+                var yawRatio = distLeft / distRight;
+                
+                if (yawRatio < 0.4 || yawRatio > 2.5) {
+                    this.handleViolation('Suspicious Gaze: Looking far to the side.');
+                    return;
+                }
+                
+                // 2. Pitch (Looking Down at a phone)
+                var distNoseToChin = Math.sqrt(Math.pow(noseTip.x - jawBottom.x, 2) + Math.pow(noseTip.y - jawBottom.y, 2));
+                var distBridgeToNose = Math.sqrt(Math.pow(noseBridge.x - noseTip.x, 2) + Math.pow(noseBridge.y - noseTip.y, 2));
+                var pitchRatio = distNoseToChin / distBridgeToNose;
+                
+                if (pitchRatio < 0.7) {
+                    this.handleViolation('Suspicious Gaze: Looking down (possibly at a phone).');
+                    return;
+                }
             }
         },
 
