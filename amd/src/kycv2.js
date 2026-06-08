@@ -27,16 +27,12 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 await faceapi.nets.faceLandmark68Net.loadFromUri(modelPath);
                 await faceapi.nets.faceRecognitionNet.loadFromUri(modelPath);
                 
-                // Wait for user gesture before accessing camera to prevent browser hang
-                if (!window.netragoKycCompleted && this.config.requirecamera) {
-                    var self = this;
+                // If models loaded successfully, update text
+                $('#nf-loading-text').text('Environment Ready');
+                $('#nf-loading-desc').text('AI Models loaded successfully. Click Start Setup if you haven\'t already.');
+                
+                if (window.netragoKycCompleted || !this.config.requirecamera) {
                     $('#nf-loading-spinner').hide();
-                    $('#nf-loading-text').text('Environment Ready');
-                    $('#nf-loading-desc').text('Please click the button below to start the camera and begin identity verification.');
-                    $('#nf-btn-start-setup').show().on('click', function() {
-                        $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Starting camera...');
-                        self.startCamera();
-                    });
                 }
             } catch (err) {
                 $('#nf-loading-text').text('Failed to load AI models. Please check your connection.');
@@ -67,6 +63,10 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
         bindEvents: function() {
             var self = this;
+
+            document.addEventListener('netrago_start_clicked', function() {
+                self.startCamera();
+            });
 
             // btn-agree-intro removed, starts automatically after models load.
 
