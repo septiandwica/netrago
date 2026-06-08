@@ -579,6 +579,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                         frame.contentWindow.isSubmitting = true;
                     }
                     
+                    sessionStorage.setItem('netrago_violation_termination', '1');
+                    
                     if (finishBtn) {
                         finishBtn.click();
                     } else {
