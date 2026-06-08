@@ -208,6 +208,10 @@ $css = "
             <!-- Step 3: Consent -->
             <div id='nf-step-3' class='netrago-step'>
                 <h2>Do you see yourself and your screen?</h2>
+                <div style='display:flex; justify-content:center; gap: 10px; margin-bottom: 15px;'>
+                    <video id='nf-preview-screen' autoplay muted playsinline style='width: 48%; border-radius: 4px; border: 1px solid #ccc; background: #000; height: 120px; object-fit: cover;'></video>
+                    <video id='nf-preview-camera' autoplay muted playsinline style='width: 48%; border-radius: 4px; border: 1px solid #ccc; background: #000; height: 120px; object-fit: cover;'></video>
+                </div>
                 <p>Please review the proctoring agreement below.</p>
                 <div class='netrago-checkbox-group'>
                     <input type='checkbox' id='nf-consent-checkbox'>

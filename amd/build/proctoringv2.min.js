@@ -126,17 +126,83 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     }
                     
                     // Init camera if required
-                    if (self.config.requirecamera == 1) {
-                        self.initCamera();
-                    } else {
-                        self.startProctoringAndUnlock();
-                    }
+                    self.startProctoringAndUnlock();
                 });
             }
+        },
+
+        moveToStep3: function() {
+            document.getElementById('nf-step-2').classList.remove('active');
+            document.getElementById('nf-step-3').classList.add('active');
+        },
+        
+        requestCameraForPreview: function() {
+            var self = this;
+            navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } })
+                .then(function(stream) {
+                    self.stream = stream;
+                    
+                    var video = document.createElement('video');
+                    video.autoplay = true;
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.srcObject = stream;
+                    video.style.display = 'none';
+                    document.body.appendChild(video);
+                    self.videoElement = video;
+                    
+                    var preview = document.getElementById('nf-preview-camera');
+                    if (preview) { preview.srcObject = stream; }
+                    
+                    self.moveToStep3();
+                })
+                .catch(function(err) {
+                    notification.alert('NetraGo Error', 'Camera permission denied. You must allow it to proceed.', 'OK');
+                    var btnShare = document.getElementById('nf-btn-share-screen');
+                    if (btnShare) {
+                        btnShare.disabled = false;
+                        btnShare.innerText = "Allow Share Screen";
+                    }
+                });
         },
         
         startProctoringAndUnlock: function() {
             var self = this;
+            
+            if (this.config.requirecamera == 1 && this.stream) {
+                this.canvasElement = document.createElement('canvas');
+                this.canvasElement.width = 320;
+                this.canvasElement.height = 240;
+                this.canvasElement.style.display = 'none';
+                document.body.appendChild(this.canvasElement);
+
+                this.modelsLoaded = false;
+                var modelPath = M.cfg.wwwroot + '/local/netrago/models';
+                Promise.all([
+                    faceapi.nets.ssdMobilenetv1.loadFromUri(modelPath),
+                    faceapi.nets.faceLandmark68Net.loadFromUri(modelPath),
+                    faceapi.nets.faceRecognitionNet.loadFromUri(modelPath)
+                ]).then(() => {
+                    self.modelsLoaded = true;
+                }).catch(err => {
+                    console.error("NetraGo AI Model Load Error:", err);
+                });
+
+                this.intervalId = setInterval(function() {
+                    self.takeSnapshot('snapshot');
+                }, 60000);
+
+                if (this.baselineDescriptor) {
+                    this.faceLoopId = setInterval(function() {
+                        self.verifyFaceLoop();
+                    }, 15000);
+                }
+
+                setTimeout(function() {
+                    self.takeSnapshot('snapshot');
+                }, 3000);
+            }
+
             // Submit the hidden form targeting the iframe
             var startForm = document.getElementById('nf-hidden-start-form');
             if (startForm) {
@@ -198,9 +264,14 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                         self.handleViolation('Screen sharing was stopped.');
                     });
 
-                    // Success! Move to Step 3
-                    document.getElementById('nf-step-2').classList.remove('active');
-                    document.getElementById('nf-step-3').classList.add('active');
+                    var previewScreen = document.getElementById('nf-preview-screen');
+                    if (previewScreen) { previewScreen.srcObject = stream; }
+
+                    if (self.config.requirecamera == 1) {
+                        self.requestCameraForPreview();
+                    } else {
+                        self.moveToStep3();
+                    }
                 })
                 .catch(function(err) {
                     console.error("Screen sharing error:", err);
@@ -419,70 +490,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             });
         },
 
-        initCamera: async function() {
-            var self = this;
 
-            this.videoElement = document.createElement('video');
-            this.videoElement.autoplay = true;
-            this.videoElement.style.display = 'none';
-            document.body.appendChild(this.videoElement);
-
-            this.canvasElement = document.createElement('canvas');
-            this.canvasElement.width = 320;
-            this.canvasElement.height = 240;
-            this.canvasElement.style.display = 'none';
-            document.body.appendChild(this.canvasElement);
-
-            this.modelsLoaded = false;
-            var modelPath = M.cfg.wwwroot + '/local/netrago/models';
-            Promise.all([
-                faceapi.nets.ssdMobilenetv1.loadFromUri(modelPath),
-                faceapi.nets.faceLandmark68Net.loadFromUri(modelPath),
-                faceapi.nets.faceRecognitionNet.loadFromUri(modelPath)
-            ]).then(() => {
-                self.modelsLoaded = true;
-            }).catch(err => {
-                console.error("NetraGo AI Model Load Error:", err);
-            });
-
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                var warningText = document.getElementById('netrago-warning-text');
-                if (warningText) {
-                    warningText.innerText = "Camera API is not supported in this browser or you are not on a secure HTTPS connection.";
-                }
-                return;
-            }
-
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(function(stream) {
-                    self.stream = stream;
-                    self.videoElement.srcObject = stream;
-                    
-                    // Take a snapshot every 60 seconds
-                    self.intervalId = setInterval(function() {
-                        self.takeSnapshot('snapshot');
-                    }, 60000);
-
-                    // Start continuous face verification loop (every 5 seconds)
-                    if (self.baselineDescriptor) {
-                        self.faceLoopId = setInterval(function() {
-                            self.verifyFaceLoop();
-                        }, 15000);
-                    }
-
-                    // Take initial snapshot
-                    setTimeout(function() {
-                        self.takeSnapshot('snapshot');
-                    }, 3000);
-
-                    // Unlock the page since camera is granted
-                    self.startProctoringAndUnlock();
-                })
-                .catch(function(err) {
-                    console.error("Camera error:", err);
-                    notification.alert('NetraGo Error', 'Camera access is required for proctoring. ' + err.message, 'OK');
-                });
-        },
 
         verifyFaceLoop: async function() {
             if (!this.videoElement || !this.stream || !this.modelsLoaded) return;
