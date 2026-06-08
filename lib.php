@@ -311,8 +311,8 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         return; // Do not load proctoring on view/review pages!
     }
     
-    // Redirect attempt.php to proctor.php if NOT inside iframe
-    if (strpos($urlpath, 'attempt.php') !== false) {
+    // Redirect attempt.php and startattempt.php to proctor.php if NOT inside iframe
+    if (strpos($urlpath, 'attempt.php') !== false || strpos($urlpath, 'startattempt.php') !== false) {
         $proctor_url = (new moodle_url('/local/netrago/proctor.php', ['cmid' => $cmid, 'courseid' => $cm->course]))->out(false);
         $js = "
             if (window === window.top) {

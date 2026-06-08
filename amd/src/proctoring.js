@@ -60,34 +60,83 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
             this.bindSubmitListener();
 
-            var warningText = document.getElementById('netrago-warning-text');
+            // Show step 1
+            document.getElementById('nf-step-loading').classList.remove('active');
+            document.getElementById('nf-step-1').classList.add('active');
 
-            if (this.config.requirescreencapture == 1) {
-                var btn = document.getElementById('netrago-start-btn');
-                if (btn) {
-                    btn.style.display = 'inline-block';
-                    var spinner = document.getElementById('netrago-loading-spinner');
-                    if (spinner) spinner.style.display = 'none';
-                    if (warningText) {
-                        warningText.innerText = "Please click the button below to share your screen and start the activity.";
+            this.bindPreflightEvents();
+        },
+
+        bindPreflightEvents: function() {
+            var self = this;
+            
+            // Step 1 -> Step 2
+            var btnNext1 = document.getElementById('nf-btn-next-1');
+            if (btnNext1) {
+                btnNext1.addEventListener('click', function() {
+                    document.getElementById('nf-step-1').classList.remove('active');
+                    if (self.config.requirescreencapture == 1) {
+                        document.getElementById('nf-step-2').classList.add('active');
+                    } else {
+                        // Skip screen share if not required
+                        document.getElementById('nf-step-3').classList.add('active');
                     }
-                    var self = this;
-                    btn.addEventListener('click', function() {
-                        btn.disabled = true;
-                        btn.innerText = "Requesting Screen Share...";
-                        self.initScreenCapture();
-                    });
-                }
-            } else if (this.config.requirecamera == 1) {
-                var spinner = document.getElementById('netrago-loading-spinner');
-                if (spinner) spinner.style.display = 'block';
-                if (warningText) {
-                    warningText.innerText = "Initializing NetraGo Proctoring...";
-                }
-                this.initCamera();
-            } else {
-                this.unlockPage();
+                });
             }
+
+            // Step 2 Screen Share
+            var btnShare = document.getElementById('nf-btn-share-screen');
+            if (btnShare) {
+                btnShare.addEventListener('click', function() {
+                    btnShare.disabled = true;
+                    btnShare.innerText = "Requesting Screen Share...";
+                    self.initScreenCapture();
+                });
+            }
+
+            // Step 3 Consent
+            var consentCheckbox = document.getElementById('nf-consent-checkbox');
+            var btnStart = document.getElementById('nf-btn-start-attempt');
+            if (consentCheckbox && btnStart) {
+                consentCheckbox.addEventListener('change', function() {
+                    btnStart.disabled = !this.checked;
+                });
+
+                btnStart.addEventListener('click', function() {
+                    document.getElementById('nf-step-3').classList.remove('active');
+                    document.getElementById('nf-step-warning').classList.add('active');
+                    
+                    // Populate hidden password field
+                    var pwdInput = document.getElementById('nf-quiz-password');
+                    var hiddenPwd = document.getElementById('nf-hidden-password');
+                    if (pwdInput && hiddenPwd) {
+                        hiddenPwd.value = pwdInput.value;
+                    }
+                    
+                    // Init camera if required
+                    if (self.config.requirecamera == 1) {
+                        self.initCamera();
+                    } else {
+                        self.startProctoringAndUnlock();
+                    }
+                });
+            }
+        },
+        
+        startProctoringAndUnlock: function() {
+            var self = this;
+            // Submit the hidden form targeting the iframe
+            var startForm = document.getElementById('nf-hidden-start-form');
+            if (startForm) {
+                startForm.submit();
+            } else {
+                // Fallback to direct load if form is missing
+                document.getElementById('netrago-quiz-frame').src = self.config.attempt_url;
+            }
+            
+            setTimeout(function() {
+                self.unlockPage();
+            }, 3000); // 3 seconds warning delay
         },
 
         initScreenCapture: function() {
@@ -137,37 +186,29 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                         self.handleViolation('Screen sharing was stopped.');
                     });
 
-                    if (self.config.requirecamera == 1) {
-                        self.initCamera();
-                    } else {
-                        self.unlockPage();
-                    }
+                    // Success! Move to Step 3
+                    document.getElementById('nf-step-2').classList.remove('active');
+                    document.getElementById('nf-step-3').classList.add('active');
                 })
                 .catch(function(err) {
-                    var warningText = document.getElementById('netrago-warning-text');
-                    var btn = document.getElementById('netrago-start-btn');
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = "<i class='fa fa-desktop'></i> Start Activity & Share Screen";
+                    console.error("Screen sharing error:", err);
+                    var btnShare = document.getElementById('nf-btn-share-screen');
+                    if (btnShare) {
+                        btnShare.disabled = false;
+                        btnShare.innerHTML = "<i class='fa fa-desktop'></i> Allow Share Screen";
                     }
-                    var spinner = document.getElementById('netrago-loading-spinner');
-                    if (spinner) spinner.style.display = 'none';
-                    if (warningText) {
-                        warningText.innerText = "Screen sharing access is required to proceed. Please allow screen sharing. (" + err.message + ")";
-                    } else {
-                        notification.alert('NetraGo Warning', 'Screen sharing is required to proceed. ' + err.message, 'OK');
-                    }
+                    notification.alert('NetraGo Error', 'Screen sharing permission denied. You must allow it to proceed.', 'OK');
                 });
         },
 
         unlockPage: function() {
-            var warningNode = document.getElementById('netrago-nojs-warning');
-            if (warningNode) warningNode.remove();
-            
+            var overlay = document.getElementById('netrago-preflight-container');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
             var frame = document.getElementById('netrago-quiz-frame');
-            if (frame && (!frame.src || frame.src === '')) {
+            if (frame) {
                 frame.style.display = 'block';
-                frame.src = this.config.attempt_url;
                 frame.focus();
             }
         },
@@ -395,16 +436,11 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     }, 3000);
 
                     // Unlock the page since camera is granted
-                    self.unlockPage();
-
+                    self.startProctoringAndUnlock();
                 })
                 .catch(function(err) {
-                    var warningText = document.getElementById('netrago-warning-text');
-                    if (warningText) {
-                        warningText.innerText = "Camera access is denied or not available. Please allow camera access in your browser settings and refresh the page. (" + err.message + ")";
-                    } else {
-                        notification.alert('NetraGo Warning', 'Camera access is required to proceed. ' + err.message, 'OK');
-                    }
+                    console.error("Camera error:", err);
+                    notification.alert('NetraGo Error', 'Camera access is required for proctoring. ' + err.message, 'OK');
                 });
         },
 

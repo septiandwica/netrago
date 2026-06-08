@@ -75,32 +75,124 @@ $config = [
 $warningmsg = get_string('js_required_warning', 'local_netrago');
 $css = "
     <style id='netrago-anti-js-bypass'>
-        body { overflow: hidden !important; margin: 0; padding: 0; }
-        #netrago-nojs-warning { 
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            background: #ffffff; color: #333; 
-            z-index: 9999999; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            font-size: 1.1rem; text-align: center; padding: 20px;
+        body { margin: 0; padding: 0; background: #f4f6f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+        #netrago-preflight-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #f4f6f8; z-index: 9999999; display: flex;
+            align-items: center; justify-content: center; overflow-y: auto; padding: 20px;
         }
+        .netrago-card {
+            background: #fff; width: 100%; max-width: 500px; border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 30px; text-align: center;
+        }
+        .netrago-card h2 { font-size: 24px; margin-bottom: 15px; font-weight: 600; color: #333; }
+        .netrago-card p { font-size: 15px; color: #555; margin-bottom: 20px; line-height: 1.5; }
+        .netrago-input-group { text-align: left; margin-bottom: 25px; }
+        .netrago-input-group label { display: block; font-weight: 600; margin-bottom: 8px; color: #444; }
+        .netrago-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
+        .netrago-btn {
+            background: #007bff; color: white; border: none; padding: 12px 24px;
+            font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;
+        }
+        .netrago-btn:hover { background: #0056b3; }
+        .netrago-btn:disabled { background: #a0c4ff; cursor: not-allowed; }
+        
+        .netrago-info-box {
+            background: #e9f5ff; border: 1px solid #b8daff; color: #004085;
+            padding: 15px; border-radius: 4px; text-align: left; margin-bottom: 25px; font-size: 14px;
+        }
+        .netrago-info-box ul { margin: 10px 0 0 20px; padding: 0; }
+        .netrago-info-box li { margin-bottom: 5px; }
+        
+        .netrago-step { display: none; }
+        .netrago-step.active { display: block; }
+        
+        .netrago-checkbox-group {
+            display: flex; align-items: flex-start; text-align: left; margin-bottom: 25px;
+            background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6;
+        }
+        .netrago-checkbox-group input { margin-top: 4px; margin-right: 12px; transform: scale(1.2); }
+        .netrago-checkbox-group label { font-size: 14px; color: #444; line-height: 1.4; cursor: pointer; }
+        
         .netrago-spinner {
             border: 4px solid #f3f3f3; border-top: 4px solid #007bff;
-            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;
+            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
+            margin: 0 auto 15px auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         #netrago-quiz-frame {
-            border: none;
-            width: 100vw;
-            height: 100vh;
-            display: none; /* Hidden until unlocked */
+            border: none; width: 100vw; height: 100vh; display: none;
         }
     </style>
-    <div id='netrago-nojs-warning'>
-        <div class='netrago-spinner' id='netrago-loading-spinner'></div>
-        <span id='netrago-warning-text' class='text-muted'>Initializing Proctoring Session...</span>
-        <button id='netrago-start-btn' class='btn btn-primary mt-4' style='display:none; font-size: 1.1rem; padding: 10px 20px;'><i class='fa fa-desktop'></i> Start Activity & Share Screen</button>
+
+    <div id='netrago-preflight-container'>
+        <div class='netrago-card'>
+            <!-- Loading Step -->
+            <div id='nf-step-loading' class='netrago-step active'>
+                <div class='netrago-spinner'></div>
+                <h2 id='nf-loading-text'>Initializing Session...</h2>
+                <p>Please wait while we prepare your proctoring environment.</p>
+            </div>
+
+            <!-- Step 1: Password & Info -->
+            <div id='nf-step-1' class='netrago-step'>
+                <h2>Start attempt</h2>
+                <p>To attempt this quiz you need to know the quiz password.</p>
+                <div class='netrago-input-group'>
+                    <label for='nf-quiz-password'>Quiz password</label>
+                    <input type='password' id='nf-quiz-password' class='netrago-input' placeholder='Click to enter text'>
+                </div>
+                <div class='netrago-info-box'>
+                    <strong>Camera and screen tracking is enabled</strong>
+                    <ul>
+                        <li>To start an attempt you need to provide access to your camera and screen.</li>
+                        <li>Snapshots from your camera and screen will be taken during your attempt.</li>
+                        <li>A report will be shown to your teacher once you finish your quiz attempt.</li>
+                    </ul>
+                </div>
+                <button id='nf-btn-next-1' class='netrago-btn'>Continue</button>
+            </div>
+
+            <!-- Step 2: Screen Share -->
+            <div id='nf-step-2' class='netrago-step'>
+                <h2>Almost done</h2>
+                <p>Now please provide access to your screen.</p>
+                <div class='netrago-info-box' style='background: #fff3cd; border-color: #ffeeba; color: #856404;'>
+                    <i class='fa fa-warning'></i> You <strong>MUST</strong> select the <strong>Entire Screen</strong> option. Sharing a window or tab is prohibited.
+                </div>
+                <button id='nf-btn-share-screen' class='netrago-btn'><i class='fa fa-desktop'></i> Allow Share Screen</button>
+            </div>
+
+            <!-- Step 3: Consent -->
+            <div id='nf-step-3' class='netrago-step'>
+                <h2>Do you see yourself and your screen?</h2>
+                <p>Please review the proctoring agreement below.</p>
+                <div class='netrago-checkbox-group'>
+                    <input type='checkbox' id='nf-consent-checkbox'>
+                    <label for='nf-consent-checkbox'>
+                        I provide consent to record, process and store the proctoring data, including screenshots of my screen and photos of myself, and share them with my teacher.
+                    </label>
+                </div>
+                <button id='nf-btn-start-attempt' class='netrago-btn' disabled>Start attempt</button>
+            </div>
+
+            <!-- Warning Step (Shown briefly before attempt starts) -->
+            <div id='nf-step-warning' class='netrago-step'>
+                <h2 class='text-danger'>Attention!</h2>
+                <p style='font-size: 18px; font-weight: bold;'>Do NOT disable your camera or screen during your test as this may affect your test results.</p>
+                <div class='netrago-spinner' style='margin-top: 30px;'></div>
+                <p>Starting quiz...</p>
+            </div>
+        </div>
     </div>
+    
+    <!-- Hidden form to submit password to Moodle native startattempt.php -->
+    <form id='nf-hidden-start-form' method='POST' action='" . new moodle_url('/mod/quiz/startattempt.php') . "' target='netrago-quiz-iframe'>
+        <input type='hidden' name='cmid' value='{$cmid}'>
+        <input type='hidden' name='sesskey' value='" . sesskey() . "'>
+        <input type='hidden' name='quizpassword' id='nf-hidden-password' value=''>
+    </form>
 ";
 $CFG->additionalhtmlhead .= $css;
 
