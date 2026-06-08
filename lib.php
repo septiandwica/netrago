@@ -313,15 +313,20 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         "userid = ? AND cmid = ? AND (eventtype LIKE '%violation%' OR eventtype LIKE '%focus_loss%' OR eventtype LIKE '%tab_switch%')", 
         [$USER->id, $cmid]);
 
-    // iFrame breakout for non-attempt pages (e.g. review.php, summary.php)
-    if (strpos($urlpath, 'attempt.php') === false && strpos($urlpath, 'startattempt.php') === false && strpos($urlpath, 'view.php') === false && strpos($urlpath, 'proctor.php') === false) {
+    // iFrame breakout for non-attempt pages (e.g. review.php)
+    if (strpos($urlpath, 'attempt.php') === false && 
+        strpos($urlpath, 'startattempt.php') === false && 
+        strpos($urlpath, 'view.php') === false && 
+        strpos($urlpath, 'proctor.php') === false && 
+        strpos($urlpath, 'summary.php') === false && 
+        strpos($urlpath, 'processattempt.php') === false) {
         $js = "
             if (window !== window.top) {
                 window.top.location.href = window.location.href; // Break out of iframe!
             }
         ";
         $CFG->additionalhtmlhead .= "<script>{$js}</script>";
-        return; // Do not load proctoring on view/review pages!
+        return; // Do not load proctoring on review pages!
     }
     
     // Intercept "Attempt quiz now" / "Continue" button on view.php BEFORE the timer starts
@@ -348,9 +353,12 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         return; // Do not load proctoring.js inside view.php!
     }
     
-    // If inside iframe on attempt.php or startattempt.php, do NOT redirect to proctor.php!
+    // If inside iframe on attempt.php, startattempt.php, summary.php, or processattempt.php, do NOT redirect to proctor.php!
     // We want the attempt to load natively inside the iframe.
-    if (strpos($urlpath, 'attempt.php') !== false || strpos($urlpath, 'startattempt.php') !== false) {
+    if (strpos($urlpath, 'attempt.php') !== false || 
+        strpos($urlpath, 'startattempt.php') !== false || 
+        strpos($urlpath, 'summary.php') !== false || 
+        strpos($urlpath, 'processattempt.php') !== false) {
         if (strpos($urlpath, 'startattempt.php') !== false) {
             // Force the confirmation modal to fit in the iframe if needed
             $CFG->additionalhtmlhead .= "<style>body { background: transparent !important; } .moodle-dialogue-base { left: 50% !important; transform: translateX(-50%) !important; }</style>";

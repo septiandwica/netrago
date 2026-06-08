@@ -28,7 +28,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 await faceapi.nets.faceRecognitionNet.loadFromUri(modelPath);
                 
                 // If models loaded successfully, update text
-                $('#nf-loading-text').text('Environment Ready');
+                $('#nf-loading-spinner').hide();
+                $('#nf-loading-text').html('<i class="fa fa-check-circle" style="color: #28a745;"></i> Environment Ready');
                 $('#nf-loading-desc').text('AI Models loaded successfully. Click Start Setup if you haven\'t already.');
                 
                 if (window.netragoKycCompleted || !this.config.requirecamera) {
