@@ -331,24 +331,18 @@ function local_netrago_extend_navigation(global_navigation $nav) {
             if (window !== window.top) {
                 window.top.location.href = window.location.href; // Break out of iframe!
             }
-            document.addEventListener('DOMContentLoaded', function() {
-                var forms = document.querySelectorAll('form[action*=\"startattempt.php\"], form[action*=\"attempt.php\"]');
-                forms.forEach(function(form) {
-                    form.addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        var targetUrl = form.action;
-                        var cmidInput = form.querySelector('input[name=\"cmid\"]');
-                        if (cmidInput && targetUrl.indexOf('cmid=') === -1) {
-                            targetUrl += (targetUrl.indexOf('?') === -1 ? '?' : '&') + 'cmid=' + cmidInput.value;
+            document.addEventListener('submit', function(e) {
+                var form = e.target;
+                if (form && form.tagName === 'FORM') {
+                    var action = form.getAttribute('action') || form.action || '';
+                    if (action.indexOf('startattempt.php') !== -1 || action.indexOf('attempt.php') !== -1) {
+                        if (action.indexOf('proctor.php') === -1) {
+                            form.action = '{$proctor_url}&url=' + encodeURIComponent(form.action);
                         }
-                        var sesskeyInput = form.querySelector('input[name=\"sesskey\"]');
-                        if (sesskeyInput && targetUrl.indexOf('sesskey=') === -1) {
-                            targetUrl += (targetUrl.indexOf('?') === -1 ? '?' : '&') + 'sesskey=' + sesskeyInput.value;
-                        }
-                        window.location.href = '{$proctor_url}&url=' + encodeURIComponent(targetUrl);
-                    });
-                });
-            });
+                    }
+                }
+            }, true); // Use capture phase to intercept before anything else
+
         ";
         $CFG->additionalhtmlhead .= "<script>{$js}</script>";
         return; // Do not load proctoring.js inside view.php!
