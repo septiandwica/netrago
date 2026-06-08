@@ -39,10 +39,27 @@ if (!$settings) {
     redirect(new moodle_url($url));
 }
 
-// Persistent Strikes Calculation
-$violation_count = $DB->count_records_select('local_netrago_logs', 
-    "userid = ? AND cmid = ? AND (eventtype LIKE '%violation%' OR eventtype LIKE '%focus_loss%' OR eventtype LIKE '%tab_switch%')", 
-    [$USER->id, $cmid]);
+// Persistent Strikes Calculation (Per-Attempt)
+$violation_count = 0;
+if ($cm->modname === 'quiz') {
+    $quiz = $DB->get_record('quiz', ['id' => $cm->instance]);
+    $lastattempts = $DB->get_records('quiz_attempts', ['quiz' => $quiz->id, 'userid' => $USER->id], 'attempt DESC', '*', 0, 1);
+    if ($lastattempts) {
+        $lastattempt = reset($lastattempts);
+        if (empty($lastattempt->timefinish)) {
+            // Attempt is currently in progress. Count violations since it started.
+            $violation_count = $DB->count_records_select('local_netrago_logs', 
+                "userid = ? AND cmid = ? AND timecreated >= ? AND (eventtype LIKE '%violation%' OR eventtype LIKE '%focus_loss%' OR eventtype LIKE '%tab_switch%')", 
+                [$USER->id, $cmid, $lastattempt->timestart]);
+        }
+    }
+} else {
+    // For non-quiz activities, we count everything in the last 2 hours as a heuristic
+    $twelvehoursago = time() - (2 * 3600);
+    $violation_count = $DB->count_records_select('local_netrago_logs', 
+        "userid = ? AND cmid = ? AND timecreated >= ? AND (eventtype LIKE '%violation%' OR eventtype LIKE '%focus_loss%' OR eventtype LIKE '%tab_switch%')", 
+        [$USER->id, $cmid, $twelvehoursago]);
+}
 
 $kyc = $DB->get_record('local_netrago_kyc', ['userid' => $USER->id, 'cmid' => $cmid]);
 $master_field = $DB->get_record('user_info_field', ['shortname' => 'netrago_master_face']);
