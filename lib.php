@@ -61,6 +61,18 @@ function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
         $mform->setDefault('netrago_disabledevtools', 0);
     }
 
+    $strikes_options = [
+        0 => 'Disabled (Do not auto-close)',
+        1 => '1 Violation',
+        2 => '2 Violations',
+        3 => '3 Violations',
+        4 => '4 Violations',
+        5 => '5 Violations'
+    ];
+    $mform->addElement('select', 'netrago_maxstrikes', get_string('maxstrikes', 'local_netrago'), $strikes_options);
+    $mform->addHelpButton('netrago_maxstrikes', 'maxstrikes', 'local_netrago');
+    $mform->setDefault('netrago_maxstrikes', 3);
+
     // If editing an existing module, load the current settings.
     $cm = $formwrapper->get_coursemodule();
     if ($cm && $cm->id) {
@@ -72,6 +84,7 @@ function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
             $mform->setDefault('netrago_disablecopypaste', $settings->disablecopypaste);
             $mform->setDefault('netrago_disablefocusloss', $settings->disablefocusloss ?? 0);
             $mform->setDefault('netrago_disabledevtools', $settings->disabledevtools ?? 0);
+            $mform->setDefault('netrago_maxstrikes', $settings->maxstrikes ?? 3);
         }
     }
 }
@@ -99,6 +112,7 @@ function local_netrago_coursemodule_edit_post_actions($data, $course) {
     $disablecopypaste = isset($data->netrago_disablecopypaste) ? $data->netrago_disablecopypaste : 0;
     $disablefocusloss = isset($data->netrago_disablefocusloss) ? $data->netrago_disablefocusloss : 0;
     $disabledevtools = isset($data->netrago_disabledevtools) ? $data->netrago_disabledevtools : 0;
+    $maxstrikes = isset($data->netrago_maxstrikes) ? $data->netrago_maxstrikes : 3;
 
     if ($requirecamera || $requirefullscreen || $requirescreencapture || $disablecopypaste || $disablefocusloss || $disabledevtools) {
         $record = new stdClass();
@@ -109,6 +123,7 @@ function local_netrago_coursemodule_edit_post_actions($data, $course) {
         $record->disablecopypaste = $disablecopypaste;
         $record->disablefocusloss = $disablefocusloss;
         $record->disabledevtools = $disabledevtools;
+        $record->maxstrikes = $maxstrikes;
 
         if ($settings) {
             $record->id = $settings->id;
@@ -332,6 +347,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         'disablecopypaste' => get_config('local_netrago', 'allow_copypaste') ? $settings->disablecopypaste : 0,
         'allow_focusloss' => get_config('local_netrago', 'allow_focusloss') ? $settings->disablefocusloss : 0,
         'allow_devtools' => get_config('local_netrago', 'allow_devtools') ? $settings->disabledevtools : 0,
+        'maxstrikes' => isset($settings->maxstrikes) ? $settings->maxstrikes : 3,
         'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false),
         'descriptor' => $descriptor_to_use
     ];

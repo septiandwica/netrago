@@ -21,9 +21,9 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             
             // Persistent Strikes
             this.strikes = this.config.current_strikes || 0;
-            if (this.strikes > 0 && this.strikes < 3) {
-                notification.alert('NetraGo Proctoring', 'Warning: You have ' + this.strikes + ' recorded violations for this activity. A total of 3 violations will terminate your attempt automatically.', 'I Understand');
-            } else if (this.strikes >= 3) {
+            if (this.config.maxstrikes > 0 && this.strikes > 0 && this.strikes < this.config.maxstrikes) {
+                notification.alert('NetraGo Proctoring', 'Warning: You have ' + this.strikes + ' recorded violations for this activity. A total of ' + this.config.maxstrikes + ' violations will terminate your attempt automatically.', 'I Understand');
+            } else if (this.config.maxstrikes > 0 && this.strikes >= this.config.maxstrikes) {
                 this.handleViolation('You have already exceeded the maximum allowed violations.');
                 return;
             }
@@ -516,7 +516,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             this.takeSnapshot('face_violation_' + this.strikes);
             this.takeScreenSnapshot('face_violation_' + this.strikes);
             
-            if (this.strikes >= 3) {
+            if (this.config.maxstrikes > 0 && this.strikes >= this.config.maxstrikes) {
                 // INSTANTLY BLOCK UI to prevent any further interaction
                 var blocker = document.createElement('div');
                 blocker.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.95);z-index:999999999;color:red;display:flex;align-items:center;justify-content:center;font-size:2rem;text-align:center;font-weight:bold;flex-direction:column;';
@@ -575,7 +575,11 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             } else {
                 // Obscure screen with blur
                 document.body.style.filter = 'blur(10px)';
-                notification.alert('NetraGo Warning', 'WARNING ' + this.strikes + '/3: ' + reason + '<br>Please look at the camera immediately.', 'I Understand');
+                var warningText = 'WARNING: ' + reason + '<br>Please look at the camera immediately.';
+                if (this.config.maxstrikes > 0) {
+                    warningText = 'WARNING ' + this.strikes + '/' + this.config.maxstrikes + ': ' + reason + '<br>Please look at the camera immediately.';
+                }
+                notification.alert('NetraGo Warning', warningText, 'I Understand');
                 setTimeout(function() {
                     document.body.style.filter = 'none';
                 }, 3000);

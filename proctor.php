@@ -66,6 +66,7 @@ $config = [
     'disablecopypaste' => get_config('local_netrago', 'allow_copypaste') ? ($settings->disablecopypaste ?? 0) : 0,
     'allow_focusloss' => get_config('local_netrago', 'allow_focusloss') ? ($settings->disablefocusloss ?? 0) : 0,
     'allow_devtools' => get_config('local_netrago', 'allow_devtools') ? ($settings->disabledevtools ?? 0) : 0,
+    'maxstrikes' => isset($settings->maxstrikes) ? $settings->maxstrikes : 3,
     'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false),
     'descriptor' => $descriptor_to_use,
     'attempt_url' => $url

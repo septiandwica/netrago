@@ -64,5 +64,14 @@ function xmldb_local_netrago_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026060504, 'local', 'netrago');
     }
 
+    if ($oldversion < 2026060802) {
+        $table = new xmldb_table('local_netrago');
+        $field = new xmldb_field('maxstrikes', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '3', 'disabledevtools');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        upgrade_plugin_savepoint(true, 2026060802, 'local', 'netrago');
+    }
+
     return true;
 }
