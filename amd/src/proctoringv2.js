@@ -256,10 +256,10 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     if (trackSettings.displaySurface && trackSettings.displaySurface !== 'monitor') {
                         stream.getTracks().forEach(track => track.stop());
                         var warningText = document.getElementById('netrago-warning-text');
-                        var btn = document.getElementById('netrago-start-btn');
+                        var btn = document.getElementById('nf-btn-share-screen');
                         if (btn) {
                             btn.disabled = false;
-                            btn.innerHTML = "<i class='fa fa-desktop'></i> Start Activity & Share Screen";
+                            btn.innerHTML = "<i class='fa fa-desktop'></i> Allow Share Screen";
                         }
                         if (warningText) {
                             warningText.innerText = "You MUST share your 'Entire Screen'. Sharing a Window or Tab is prohibited.";
