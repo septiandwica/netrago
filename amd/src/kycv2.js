@@ -13,6 +13,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
         init: function(config) {
             this.config = config;
+            window.netragoKycInstance = this;
             
             if (window.screen && window.screen.isExtended === undefined) {
                 notification.alert('Browser Recommendation', 'You are using a browser that does not fully support NetraGo Advanced Security (e.g., Safari or Firefox). For the best experience and to avoid false violation flags, we strongly recommend using Google Chrome or Microsoft Edge.', 'I Understand');
