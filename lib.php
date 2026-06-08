@@ -320,11 +320,42 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         strpos($urlpath, 'proctor.php') === false && 
         strpos($urlpath, 'summary.php') === false && 
         strpos($urlpath, 'processattempt.php') === false) {
+        
         $js = "
             if (window !== window.top) {
+                sessionStorage.setItem('netrago_just_finished', '1');
                 window.top.location.href = window.location.href; // Break out of iframe!
             }
         ";
+        
+        if (strpos($urlpath, 'review.php') !== false) {
+            $js .= "
+            else {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (typeof require !== 'undefined') {
+                        require(['core/notification'], function(notification) {
+                            var isViolation = sessionStorage.getItem('netrago_violation_termination');
+                            var justFinished = sessionStorage.getItem('netrago_just_finished');
+                            
+                            if (isViolation === '1') {
+                                sessionStorage.removeItem('netrago_violation_termination');
+                                sessionStorage.removeItem('netrago_just_finished'); // clear both just in case
+                                setTimeout(function() {
+                                    notification.alert('NetraGo: Terminated', 'Your attempt was terminated due to policy violations. Please contact your lecturer.', 'OK');
+                                }, 500);
+                            } else if (justFinished === '1') {
+                                sessionStorage.removeItem('netrago_just_finished');
+                                setTimeout(function() {
+                                    notification.alert('NetraGo: Completed', 'Congratulations on completing the proctored activity.', 'OK');
+                                }, 500);
+                            }
+                        });
+                    }
+                });
+            }
+            ";
+        }
+        
         $CFG->additionalhtmlhead .= "<script>{$js}</script>";
         return; // Do not load proctoring on review pages!
     }
