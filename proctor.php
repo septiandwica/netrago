@@ -82,6 +82,7 @@ $config = [
     'current_strikes' => $violation_count,
     'userid' => $USER->id,
     'requirecamera' => get_config('local_netrago', 'allow_camera') ? ($settings->requirecamera ?? 0) : 0,
+    'requireaudio' => get_config('local_netrago', 'allow_audio') ? ($settings->requireaudio ?? 0) : 0,
     'requirefullscreen' => get_config('local_netrago', 'allow_fullscreen') ? ($settings->requirefullscreen ?? 0) : 0,
     'requirescreencapture' => get_config('local_netrago', 'allow_screencapture') ? ($settings->requirescreencapture ?? 0) : 0,
     'disablecopypaste' => get_config('local_netrago', 'allow_copypaste') ? ($settings->disablecopypaste ?? 0) : 0,

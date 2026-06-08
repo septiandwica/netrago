@@ -36,6 +36,12 @@ function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
         $mform->hideIf('netrago_requirekyc', 'netrago_requirecamera', 'eq', 0);
     }
 
+    if (get_config('local_netrago', 'allow_audio')) {
+        $mform->addElement('selectyesno', 'netrago_requireaudio', get_string('requireaudio', 'local_netrago'));
+        $mform->addHelpButton('netrago_requireaudio', 'requireaudio', 'local_netrago');
+        $mform->setDefault('netrago_requireaudio', 0);
+    }
+
     if (get_config('local_netrago', 'allow_fullscreen')) {
         $mform->addElement('selectyesno', 'netrago_requirefullscreen', get_string('requirefullscreen', 'local_netrago'));
         $mform->addHelpButton('netrago_requirefullscreen', 'requirefullscreen', 'local_netrago');
@@ -78,6 +84,7 @@ function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
         if ($settings) {
             $mform->setDefault('netrago_requirecamera', $settings->requirecamera);
             $mform->setDefault('netrago_requirekyc', isset($settings->requirekyc) ? $settings->requirekyc : 1);
+            $mform->setDefault('netrago_requireaudio', isset($settings->requireaudio) ? $settings->requireaudio : 0);
             $mform->setDefault('netrago_requirefullscreen', $settings->requirefullscreen);
             $mform->setDefault('netrago_requirescreencapture', $settings->requirescreencapture ?? 0);
             $mform->setDefault('netrago_disablecopypaste', $settings->disablecopypaste);
@@ -107,6 +114,7 @@ function local_netrago_coursemodule_edit_post_actions($data, $course) {
 
     $requirecamera = isset($data->netrago_requirecamera) ? $data->netrago_requirecamera : 0;
     $requirekyc = isset($data->netrago_requirekyc) ? $data->netrago_requirekyc : 1;
+    $requireaudio = isset($data->netrago_requireaudio) ? $data->netrago_requireaudio : 0;
     $requirefullscreen = isset($data->netrago_requirefullscreen) ? $data->netrago_requirefullscreen : 0;
     $requirescreencapture = isset($data->netrago_requirescreencapture) ? $data->netrago_requirescreencapture : 0;
     $disablecopypaste = isset($data->netrago_disablecopypaste) ? $data->netrago_disablecopypaste : 0;
@@ -114,11 +122,12 @@ function local_netrago_coursemodule_edit_post_actions($data, $course) {
     $disabledevtools = isset($data->netrago_disabledevtools) ? $data->netrago_disabledevtools : 0;
     $maxstrikes = isset($data->netrago_maxstrikes) ? $data->netrago_maxstrikes : 3;
 
-    if ($requirecamera || $requirefullscreen || $requirescreencapture || $disablecopypaste || $disablefocusloss || $disabledevtools) {
+    if ($requirecamera || $requireaudio || $requirefullscreen || $requirescreencapture || $disablecopypaste || $disablefocusloss || $disabledevtools) {
         $record = new stdClass();
         $record->cmid = $cmid;
         $record->requirecamera = $requirecamera;
         $record->requirekyc = $requirekyc;
+        $record->requireaudio = $requireaudio;
         $record->requirefullscreen = $requirefullscreen;
         $record->requirescreencapture = $requirescreencapture;
         $record->disablecopypaste = $disablecopypaste;

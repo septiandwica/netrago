@@ -30,6 +30,13 @@ if ($hassiteconfig) {
     ));
 
     $settings->add(new admin_setting_configcheckbox(
+        'local_netrago/allow_audio',
+        'Allow Audio/Microphone Monitoring',
+        'Allow teachers to enable ambient noise and audio monitoring during activities.',
+        0
+    ));
+
+    $settings->add(new admin_setting_configcheckbox(
         'local_netrago/allow_fullscreen',
         'Allow Fullscreen Enforcement',
         'Allow teachers to enforce fullscreen mode during activities.',

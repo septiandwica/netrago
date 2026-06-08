@@ -177,7 +177,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         
         requestCameraForPreview: function() {
             var self = this;
-            navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: true })
+            navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: self.config.requireaudio == 1 })
                 .then(function(stream) {
                     var track = stream.getVideoTracks()[0];
                     var label = track.label.toLowerCase();
@@ -251,7 +251,9 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 }, 60000);
 
                 if (this.baselineDescriptor) {
-                    self.monitorAudio();
+                    if (self.config.requireaudio == 1) {
+                        self.monitorAudio();
+                    }
                     self.faceLoopId = setInterval(function() {
                         self.verifyFaceLoop();
                     }, 15000);
