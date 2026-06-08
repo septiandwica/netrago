@@ -127,7 +127,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     } else {
                         // No master face, proceed to ID card capture
                         self.videoElement.play(); // Unfreeze for ID
-                        self.showStep('step-idcard');
+                        self.showStep('nf-step-kyc-idcard');
                     }
                 } else {
                     self.videoElement.play(); // Unfreeze
@@ -199,16 +199,18 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         verifyMatch: function() {
             var self = this;
             
-            if ($('#step-result').length === 0) {
-                console.error("CRITICAL: #step-result is missing from the DOM!");
+            self.showStep('nf-step-kyc-result');
+            
+            if ($('#nf-step-kyc-result').length === 0) {
+                console.error("CRITICAL: #nf-step-kyc-result is missing from the DOM!");
                 notification.alert('NetraGo Error', 'Verification step is missing from the page. Please hard refresh (Cmd+Shift+R).', 'OK');
                 self.videoElement.play();
                 $('#btn-selfie').prop('disabled', false).text('Capture Selfie');
                 return;
             }
             
-            $('#result-icon').attr('class', 'fa fa-spinner fa-spin step-icon');
-            $('#result-title').text('Verifying Identity...');
+            $('#kyc-result-spinner').show();
+            $('#result-title').text('Verifying Identity...').removeClass('text-success text-danger');
             $('#btn-retry').hide();
             
             try {
@@ -217,20 +219,20 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 // 0.60 is standard threshold for ssdMobilenetv1
                 if (distance < 0.60) {
                     // Match successful
-                    $('#result-icon').attr('class', 'fa fa-check-circle step-icon text-success');
+                    $('#kyc-result-spinner').hide();
                     this.saveKYCResult('success', Array.from(this.selfieDescriptor));
                 } else {
                     // Match failed
-                    $('#result-icon').attr('class', 'fa fa-times-circle step-icon text-danger');
-                    $('#result-title').text('Verification Failed');
+                    $('#kyc-result-spinner').hide();
+                    $('#result-title').text('Verification Failed').addClass('text-danger');
                     $('#result-desc').text('Faces do not match. Please ensure the ID card belongs to you and is clearly visible.');
                     $('#btn-retry').show();
                     this.saveKYCResult('failed', null);
                 }
             } catch (e) {
                 console.error("Error calculating distance:", e);
-                $('#result-icon').attr('class', 'fa fa-times-circle step-icon text-danger');
-                $('#result-title').text('Verification Error');
+                $('#kyc-result-spinner').hide();
+                $('#result-title').text('Verification Error').addClass('text-danger');
                 $('#result-desc').text('An error occurred while comparing faces. The identity data might be corrupted.');
                 $('#btn-retry').show();
             }
@@ -274,7 +276,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     $('#btn-retry').show();
                 }
             }).fail(function(jqXHR, textStatus, errorThrown) {
-                $('#result-icon').attr('class', 'fa fa-times-circle step-icon text-danger');
+                $('#kyc-result-spinner').hide();
                 $('#result-title').text('Network Error').addClass('text-danger');
                 $('#result-desc').text('Failed to contact server: ' + textStatus + '. Please try again.');
                 $('#btn-retry').show();
