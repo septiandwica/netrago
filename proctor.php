@@ -145,6 +145,7 @@ $css = "
             <div id='nf-step-kyc-selfie' class='netrago-step'>
                 <h2>Step 1: Take a Selfie</h2>
                 <p>Look directly at the camera. Ensure your face is well-lit and not covered.</p>
+                <p id='selfie-error' style='color:#dc3545; font-weight:bold; display:none;'></p>
                 <button id='btn-selfie' class='netrago-btn'><i class='fa fa-camera'></i> Capture Selfie</button>
             </div>
 
@@ -152,6 +153,7 @@ $css = "
             <div id='nf-step-kyc-idcard' class='netrago-step'>
                 <h2>Step 2: Official ID Card</h2>
                 <p>Hold your ID Card (KTP/KTM/SIM) in front of the camera.</p>
+                <p id='idcard-error' style='color:#dc3545; font-weight:bold; display:none;'></p>
                 <button id='btn-idcard' class='netrago-btn'><i class='fa fa-search'></i> Capture & Verify</button>
             </div>
 

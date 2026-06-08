@@ -73,9 +73,10 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             $('#btn-selfie').on('click', async function() {
                 var btn = $(this);
                 btn.prop('disabled', true).text('Detecting face...');
+                $('#selfie-error').hide();
                 
                 if (self.videoElement.videoWidth === 0 || self.videoElement.videoHeight === 0) {
-                    notification.alert('NetraGo Warning', 'Camera is still initializing. Please wait a moment and try again.', 'OK');
+                    $('#selfie-error').text('Camera is still initializing. Please wait a moment and try again.').show();
                     btn.prop('disabled', false).text('Capture Selfie');
                     return;
                 }
@@ -93,7 +94,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 } catch (e) {
                     console.error("Face detection error:", e);
                     self.videoElement.play(); // Unfreeze
-                    notification.alert('NetraGo Error', 'An error occurred during face detection. Please try again.', 'OK');
+                    $('#selfie-error').text('An error occurred during face detection. Please try again.').show();
                     btn.prop('disabled', false).text('Capture Selfie');
                     return;
                 }
@@ -105,7 +106,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
                     if (ratio < 0.05) {
                         self.videoElement.play(); // Unfreeze
-                        notification.alert('NetraGo Warning', 'Face is too small. Do not use an ID Card, please ensure your real face is close to the camera.', 'Try Again');
+                        $('#selfie-error').text('Face is too small. Do not use an ID Card, please ensure your real face is close to the camera.').show();
                         btn.prop('disabled', false).text('Capture Selfie');
                         return;
                     }
@@ -131,7 +132,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     }
                 } else {
                     self.videoElement.play(); // Unfreeze
-                    notification.alert('NetraGo Warning', 'Face not detected! Please ensure you are in a well-lit area and looking at the camera.', 'Try Again');
+                    $('#selfie-error').text('Face not detected! Please ensure you are in a well-lit area and looking at the camera.').show();
                     btn.prop('disabled', false).text('Capture Selfie');
                 }
             });
@@ -139,9 +140,10 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             $('#btn-idcard').on('click', async function() {
                 var btn = $(this);
                 btn.prop('disabled', true).text('Detecting face...');
+                $('#idcard-error').hide();
                 
                 if (self.videoElement.videoWidth === 0 || self.videoElement.videoHeight === 0) {
-                    notification.alert('NetraGo Warning', 'Camera is still initializing. Please wait a moment and try again.', 'OK');
+                    $('#idcard-error').text('Camera is still initializing. Please wait a moment and try again.').show();
                     btn.prop('disabled', false).text('Capture ID & Verify');
                     return;
                 }
@@ -159,7 +161,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 } catch (e) {
                     console.error("Face detection error:", e);
                     self.videoElement.play(); // Unfreeze
-                    notification.alert('NetraGo Error', 'An error occurred during face detection. Please try again.', 'OK');
+                    $('#idcard-error').text('An error occurred during face detection. Please try again.').show();
                     btn.prop('disabled', false).text('Capture ID & Verify');
                     return;
                 }
@@ -171,7 +173,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
                     if (ratio > 0.15) {
                         self.videoElement.play(); // Unfreeze
-                        notification.alert('NetraGo Warning', 'Face in camera is too large. Please show your Official ID Card, NOT your actual face.', 'Try Again');
+                        $('#idcard-error').text('Face in camera is too large. Please show your Official ID Card, NOT your actual face.').show();
                         btn.prop('disabled', false).text('Capture ID & Verify');
                         return;
                     }
@@ -181,7 +183,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     self.verifyMatch();
                 } else {
                     self.videoElement.play(); // Unfreeze
-                    notification.alert('NetraGo Warning', 'Face on ID Card not detected! Please hold it closer to the camera and ensure there is no glare.', 'Try Again');
+                    $('#idcard-error').text('Face on ID Card not detected! Please hold it closer to the camera and ensure there is no glare.').show();
                     btn.prop('disabled', false).text('Capture ID & Verify');
                 }
             });
