@@ -241,12 +241,12 @@ $js_injection = "
 $CFG->additionalhtmlhead .= $js_injection;
 $PAGE->requires->js_call_amd('local_netrago/proctoringv2', 'init', [$config]);
 // Load KYC script directly
-$PAGE->requires->js_call_amd('local_netrago/kycv2', 'init', [
+$PAGE->requires->js_call_amd('local_netrago/kycv2', 'init', [[
     'cmid' => $cmid,
     'ajaxurl' => (new moodle_url('/local/netrago/ajax_kyc.php'))->out(false),
     'has_master_face' => $master_descriptor ? true : false,
     'requirecamera' => $settings->requirecamera
-]);
+]]);
 
 echo $OUTPUT->header();
 
