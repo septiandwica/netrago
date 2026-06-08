@@ -58,14 +58,14 @@ $CFG->additionalhtmlhead .= $css;
 
 echo $OUTPUT->header();
 
-echo html_writer::start_tag('div', ['class' => 'netrago-report-container']);
-echo html_writer::tag('h2', 'NetraGo Proctoring Report');
-echo html_writer::tag('p', 'Activity: ' . format_string($cm->name));
-
-echo html_writer::tag('a', '&laquo; Back to Activity', ['href' => new moodle_url('/course/view.php', ['id' => $course->id]), 'class' => 'btn btn-secondary mb-4']);
+$context_data = [
+    'activity_name' => format_string($cm->name),
+    'course_url' => (new moodle_url('/course/view.php', ['id' => $course->id]))->out(false),
+    'is_summary' => ($userid == 0)
+];
 
 if ($userid == 0) {
-    // Summary View: List all users who have logs or KYC for this CM
+    // Summary View
     $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email
             FROM {user} u
             JOIN {local_netrago_logs} l ON l.userid = u.id
@@ -77,30 +77,28 @@ if ($userid == 0) {
             WHERE k.cmid = ?";
             
     $users = $DB->get_records_sql($sql, [$cmid, $cmid]);
-
-    if (empty($users)) {
-        echo $OUTPUT->notification('No proctoring data or KYC records found for this activity yet.', 'info');
-    } else {
-        $table = new html_table();
+    $context_data['has_users'] = !empty($users);
+    
+    if (!empty($users)) {
+        $context_data['is_quiz'] = ($cm->modname == 'quiz');
+        $users_data = [];
         
         if ($cm->modname == 'quiz') {
-            $table->head = ['Email', 'Name', 'Attempt', 'Score', 'Submitted', 'Duration', 'Trust score', 'Proctoring report', 'Results'];
-            
-            // Get Quiz Data
             $quiz = $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
             
             foreach ($users as $u) {
-                // Get attempts
                 $attempts = $DB->get_records('quiz_attempts', ['quiz' => $quiz->id, 'userid' => $u->id], 'attempt ASC');
                 
                 if (empty($attempts)) {
-                    $btn = html_writer::link(new moodle_url('/local/netrago/report.php', ['cmid' => $cmid, 'userid' => $u->id]), 'View KYC/Logs', ['class' => 'btn btn-sm btn-outline-primary']);
-                    $table->data[] = [
-                        s($u->email),
-                        fullname($u),
-                        '-', '-', '-', '-', '-',
-                        $btn,
-                        '-'
+                    $users_data[] = [
+                        'email' => s($u->email),
+                        'fullname' => fullname($u),
+                        'attempt' => '-', 'score_str' => '-', 'submitted' => '-', 'duration' => '-',
+                        'trust_score' => '-', 'trust_class' => '',
+                        'report_url' => (new moodle_url('/local/netrago/report.php', ['cmid' => $cmid, 'userid' => $u->id]))->out(false),
+                        'btn_class' => 'outline-primary',
+                        'btn_text' => 'View KYC/Logs',
+                        'review_url' => false
                     ];
                     continue;
                 }
@@ -110,80 +108,60 @@ if ($userid == 0) {
                         "userid = ? AND cmid = ? AND timecreated >= ? AND timecreated <= ?", 
                         [$u->id, $cmid, $att->timestart, $att->timefinish ?: time()]);
                         
-                    // Trust score calculation
-                    $trust_score = 'High';
-                    $trust_class = 'text-success';
+                    $trust_score = 'High'; $trust_class = 'text-success';
                     if ($violation_count > 0 && $violation_count < 5) { $trust_score = 'Moderate'; $trust_class = 'text-warning'; }
                     else if ($violation_count >= 5) { $trust_score = 'Low'; $trust_class = 'text-danger'; }
                     
-                    // Duration
                     $duration = ($att->timefinish > 0) ? format_time($att->timefinish - $att->timestart) : 'In progress';
                     $submitted = ($att->timefinish > 0) ? userdate($att->timefinish, '%d %B, %H:%M') : '-';
-                    
-                    // Score
                     $score_str = ($att->state == 'finished' && $quiz->sumgrades > 0 && isset($att->sumgrades)) 
-                        ? round(($att->sumgrades / $quiz->sumgrades) * 100) . '%' 
-                        : '-';
+                        ? round(($att->sumgrades / $quiz->sumgrades) * 100) . '%' : '-';
                         
-                    $btn = html_writer::link(new moodle_url('/local/netrago/report.php', ['cmid' => $cmid, 'userid' => $u->id, 'attempt' => $att->attempt]), 'View report', ['class' => 'btn btn-sm btn-primary']);
-                    
-                    // Results link (Review Attempt in Moodle)
-                    $review_url = new moodle_url('/mod/quiz/review.php', ['attempt' => $att->id, 'cmid' => $cmid]);
-                    $review_link = html_writer::link($review_url, 'Review', ['target' => '_blank']);
-                    
-                    $table->data[] = [
-                        s($u->email),
-                        fullname($u),
-                        $att->attempt,
-                        $score_str,
-                        $submitted,
-                        $duration,
-                        "<span class='{$trust_class}'><strong>{$trust_score}</strong></span>",
-                        $btn,
-                        $review_link
+                    $users_data[] = [
+                        'email' => s($u->email),
+                        'fullname' => fullname($u),
+                        'attempt' => $att->attempt,
+                        'score_str' => $score_str,
+                        'submitted' => $submitted,
+                        'duration' => $duration,
+                        'trust_score' => $trust_score,
+                        'trust_class' => $trust_class,
+                        'report_url' => (new moodle_url('/local/netrago/report.php', ['cmid' => $cmid, 'userid' => $u->id, 'attempt' => $att->attempt]))->out(false),
+                        'btn_class' => 'primary',
+                        'btn_text' => 'View report',
+                        'review_url' => (new moodle_url('/mod/quiz/review.php', ['attempt' => $att->id, 'cmid' => $cmid]))->out(false)
                     ];
                 }
             }
         } else {
-            // Standard generic table for non-quiz modules
-            $table->head = ['Student', 'Email', 'KYC Status', 'Violations Logged', 'Action'];
-            
             foreach ($users as $u) {
                 $kyc = $DB->get_record('local_netrago_kyc', ['userid' => $u->id, 'cmid' => $cmid]);
                 $violation_count = $DB->count_records('local_netrago_logs', ['userid' => $u->id, 'cmid' => $cmid]);
                 
-                $kyc_badge = $kyc ? '<span class="badge badge-success">Verified</span>' : '<span class="badge badge-secondary">Pending</span>';
-                $v_badge = $violation_count > 0 ? '<span class="badge badge-danger">'.$violation_count.' Events</span>' : '<span class="badge badge-success">Clean</span>';
-                
-                $btn = html_writer::link(new moodle_url('/local/netrago/report.php', ['cmid' => $cmid, 'userid' => $u->id]), 'View Details', ['class' => 'btn btn-sm btn-primary']);
-                
-                $table->data[] = [
-                    fullname($u),
-                    s($u->email),
-                    $kyc_badge,
-                    $v_badge,
-                    $btn
+                $users_data[] = [
+                    'fullname' => fullname($u),
+                    'email' => s($u->email),
+                    'kyc_badge' => $kyc ? '<span class="badge badge-success">Verified</span>' : '<span class="badge badge-secondary">Pending</span>',
+                    'v_badge' => $violation_count > 0 ? '<span class="badge badge-danger">'.$violation_count.' Events</span>' : '<span class="badge badge-success">Clean</span>',
+                    'report_url' => (new moodle_url('/local/netrago/report.php', ['cmid' => $cmid, 'userid' => $u->id]))->out(false)
                 ];
             }
         }
-        
-        echo html_writer::table($table);
+        $context_data['users'] = $users_data;
     }
 } else {
-    // Detailed View for a specific user
+    // Detailed View
     $user = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
+    $context_data['student_name'] = fullname($user);
+    $context_data['back_url'] = (new moodle_url('/local/netrago/report.php', ['cmid' => $cmid]))->out(false);
     
-    echo html_writer::tag('h3', 'Proctoring Report: ' . fullname($user), ['class' => 'mt-2']);
-    echo html_writer::link(new moodle_url('/local/netrago/report.php', ['cmid' => $cmid]), '&laquo; Back to all students', ['class' => 'mb-4 d-inline-block']);
-    
-    // Fetch Settings
     $settings = $DB->get_record('local_netrago', ['cmid' => $cmid]);
     $settings_arr = [];
     if ($settings->requirecamera) $settings_arr[] = 'Camera';
     if ($settings->requirescreencapture ?? 0) $settings_arr[] = 'Screen';
     if ($settings->requirefullscreen || $settings->disablefocusloss || $settings->disabledevtools) $settings_arr[] = 'Forced Tracking';
+    $context_data['proctoring_settings'] = implode(', ', $settings_arr);
     
-    // Process Logs for Attempt
     if ($attempt_num > 0 && $cm->modname == 'quiz') {
         $quiz = $DB->get_record('quiz', ['id' => $cm->instance]);
         $attempt = $DB->get_record('quiz_attempts', ['quiz' => $quiz->id, 'userid' => $userid, 'attempt' => $attempt_num]);
@@ -211,125 +189,51 @@ if ($userid == 0) {
             $left_test++;
         }
         
+        $log_data = [
+            'time_str' => userdate($log->timecreated, '%H:%M'),
+            'imagedata' => $log->imagedata,
+            'is_susp' => (strpos($log->eventtype, 'violation') !== false || strpos($log->eventtype, 'not found') !== false || strpos($log->eventtype, 'tab_switch') !== false) ? 'suspicious' : '',
+            'event_raw' => s($log->eventtype),
+            'event_clean' => s(ucwords(str_replace('_', ' ', $log->eventtype)))
+        ];
+        
+        if (empty($log->imagedata)) continue;
+        
         if (strpos($log->eventtype, 'Screen') !== false || strpos($log->eventtype, 'screen') !== false || strpos($log->eventtype, 'devtools') !== false || strpos($log->eventtype, 'fullscreen') !== false) {
-            $screen_logs[] = $log;
+            $screen_logs[] = $log_data;
         } else {
-            $camera_logs[] = $log; // Default to camera
+            $camera_logs[] = $log_data;
         }
     }
 
     $total_camera = count($camera_logs);
-    $faces_found = $total_camera - $suspicious_count; // Rough estimate
+    $faces_found = $total_camera - $suspicious_count;
     $face_presence = $total_camera > 0 ? round(($faces_found / $total_camera) * 100) : 0;
     
-    // Info Box
-    echo '<div class="card mb-4"><div class="card-body">';
-    echo '<p><strong title="The active tracking features enforced during this attempt">Proctoring settings <i class="fa fa-question-circle text-info"></i>:</strong> Activity, ' . implode(', ', $settings_arr) . '</p>';
-    echo '<p><strong title="Percentage of camera snapshots where a human face was successfully detected">Face presence <i class="fa fa-question-circle text-info"></i>:</strong> ' . $face_presence . '%</p>';
-    echo '<p><strong title="Average number of faces detected in the camera frames. Indicates if multiple people were present.">Average faces per frame <i class="fa fa-question-circle text-info"></i>:</strong> ' . ($face_presence > 50 ? 'Single face' : 'No face') . '</p>';
-    echo '<p><strong title="Number of times the student switched tabs, minimized the browser, or clicked outside the quiz window.">Left test <i class="fa fa-question-circle text-info"></i>:</strong> ' . $left_test . '</p>';
-    echo '<p><strong title="Number of camera snapshots containing violations (e.g. face not matching KYC identity, multiple faces, or no face). Does not include screen tab switches.">Screenshots <i class="fa fa-question-circle text-info"></i>:</strong> ' . $suspicious_count . ' suspicious</p>';
-    echo '<p class="text-muted small mt-3"><i class="fa fa-info-circle"></i> Camera tracking and Screen tracking are displayed in chronological timelines below.</p>';
-    echo '</div></div>';
+    $context_data['face_presence'] = $face_presence;
+    $context_data['average_faces'] = ($face_presence > 50 ? 'Single face' : 'No face');
+    $context_data['left_test'] = $left_test;
+    $context_data['suspicious_count'] = $suspicious_count;
     
-    // Timelines CSS
-    echo '<style>
-        .timeline-row { display: flex; overflow-x: auto; padding-bottom: 15px; margin-bottom: 30px; gap: 15px; }
-        .timeline-item { min-width: 150px; text-align: center; position: relative; }
-        .timeline-time { font-size: 14px; color: #555; margin-bottom: 5px; display: block; font-weight: bold; }
-        .timeline-img { width: 150px; height: 100px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
-        .timeline-img.suspicious { border: 2px solid #dc3545; }
-        .timeline-pill { position: absolute; bottom: 5px; left: 5px; right: 5px; background: rgba(0,0,0,0.7); color: white; font-size: 11px; padding: 3px 5px; border-radius: 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
-        .timeline-pill.suspicious { background: #dc3545; font-weight: bold; }
-        #netrago-lightbox { display: none; position: fixed; z-index: 9999999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.85); text-align: center; }
-        #netrago-lightbox-img { margin: auto; display: inline-block; max-width: 90%; max-height: 90vh; margin-top: 5vh; border-radius: 4px; box-shadow: 0 5px 25px rgba(0,0,0,0.5); }
-        #netrago-lightbox-close { position: absolute; top: 20px; right: 40px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; }
-    </style>';
+    $context_data['camera_logs'] = $camera_logs;
+    $context_data['has_camera_logs'] = !empty($camera_logs);
     
-    // Lightbox HTML & JS
-    echo '<div id="netrago-lightbox" onclick="this.style.display=\'none\'">
-            <span id="netrago-lightbox-close">&times;</span>
-            <img id="netrago-lightbox-img">
-          </div>';
-    echo '<script>
-            function showNetragoPreview(src) {
-                document.getElementById("netrago-lightbox-img").src = src;
-                document.getElementById("netrago-lightbox").style.display = "block";
-            }
-          </script>';
-    
-    // Camera Tracking Timeline
-    echo html_writer::tag('h4', 'Camera tracking');
-    echo '<div class="timeline-row">';
-    if (empty($camera_logs)) {
-        echo '<p class="text-muted ml-3">No camera data recorded.</p>';
-    } else {
-        foreach ($camera_logs as $log) {
-            if (empty($log->imagedata)) continue;
-            $is_susp = (strpos($log->eventtype, 'violation') !== false || strpos($log->eventtype, 'not found') !== false) ? 'suspicious' : '';
-            $time_str = userdate($log->timecreated, '%H:%M');
-            echo '<div class="timeline-item">';
-            echo "<span class='timeline-time'>{$time_str}</span>";
-            echo "<img src='{$log->imagedata}' class='timeline-img {$is_susp}' onclick='showNetragoPreview(this.src)' title='" . s($log->eventtype) . "'>";
-            echo "<div class='timeline-pill {$is_susp}' title='" . s($log->eventtype) . "'>" . s(ucwords(str_replace('_', ' ', $log->eventtype))) . "</div>";
-            echo '</div>';
-        }
-    }
-    echo '</div>';
-    
-    // Screen Tracking Timeline
-    echo html_writer::tag('h4', 'Screen tracking');
-    echo '<div class="timeline-row">';
-    if (empty($screen_logs)) {
-        echo '<p class="text-muted ml-3">No screen data recorded.</p>';
-    } else {
-        foreach ($screen_logs as $log) {
-            if (empty($log->imagedata)) continue;
-            $is_susp = (strpos($log->eventtype, 'violation') !== false || strpos($log->eventtype, 'tab_switch') !== false) ? 'suspicious' : '';
-            $time_str = userdate($log->timecreated, '%H:%M');
-            echo '<div class="timeline-item">';
-            echo "<span class='timeline-time'>{$time_str}</span>";
-            echo "<img src='{$log->imagedata}' class='timeline-img {$is_susp}' onclick='showNetragoPreview(this.src)' title='" . s($log->eventtype) . "'>";
-            echo "<div class='timeline-pill {$is_susp}' title='" . s($log->eventtype) . "'>" . s(ucwords(str_replace('_', ' ', $log->eventtype))) . "</div>";
-            echo '</div>';
-        }
-    }
-    echo '</div>';
-    
-    // Show KYC Details and Reset
-    echo html_writer::tag('h4', 'Identity Verification (KYC)', ['class' => 'mt-4 border-top pt-4']);
+    $context_data['screen_logs'] = $screen_logs;
+    $context_data['has_screen_logs'] = !empty($screen_logs);
     
     $kyc = $DB->get_record('local_netrago_kyc', ['userid' => $userid, 'cmid' => $cmid]);
-    
-    $reset_url = new moodle_url('/local/netrago/report.php', ['cmid' => $cmid, 'userid' => $userid, 'action' => 'resetkyc', 'sesskey' => sesskey()]);
-    echo html_writer::link($reset_url, '<i class="fa fa-refresh"></i> Reset KYC Verification', ['class' => 'btn btn-sm btn-danger mb-4', 'onclick' => 'return confirm("Are you sure you want to reset KYC for this user? They will have to retake their selfie and ID.");']);
+    $context_data['reset_url'] = (new moodle_url('/local/netrago/report.php', ['cmid' => $cmid, 'userid' => $userid, 'action' => 'resetkyc', 'sesskey' => sesskey()]))->out(false);
     
     if ($kyc) {
-        echo html_writer::start_tag('div', ['class' => 'card mb-4']);
-        echo html_writer::start_tag('div', ['class' => 'card-header bg-success text-white']);
-        echo "<i class='fa fa-check-circle'></i> KYC Identity Verified (" . userdate($kyc->timeverified) . ")";
-        echo html_writer::end_tag('div');
-        echo html_writer::start_tag('div', ['class' => 'card-body row']);
-        
-        echo html_writer::start_tag('div', ['class' => 'col-md-6 text-center']);
-        echo html_writer::tag('h5', 'Live Selfie');
-        $selfie_src = (strpos((string)$kyc->selfiedata, 'data:image/') === 0) ? $kyc->selfiedata : '';
-        echo html_writer::tag('img', '', ['src' => $selfie_src, 'class' => 'kyc-img shadow-sm']);
-        echo html_writer::end_tag('div');
-
-        echo html_writer::start_tag('div', ['class' => 'col-md-6 text-center']);
-        echo html_writer::tag('h5', 'Official ID Card (KTP/KTM/SIM)');
-        $ktp_src = (strpos((string)$kyc->ktpdata, 'data:image/') === 0) ? $kyc->ktpdata : '';
-        echo html_writer::tag('img', '', ['src' => $ktp_src, 'class' => 'kyc-img shadow-sm']);
-        echo html_writer::end_tag('div');
-        
-        echo html_writer::end_tag('div');
-        echo html_writer::end_tag('div');
+        $context_data['has_kyc'] = true;
+        $context_data['kyc_verified_date'] = userdate($kyc->timeverified);
+        $context_data['selfie_src'] = (strpos((string)$kyc->selfiedata, 'data:image/') === 0) ? $kyc->selfiedata : '';
+        $context_data['ktp_src'] = (strpos((string)$kyc->ktpdata, 'data:image/') === 0) ? $kyc->ktpdata : '';
     } else {
-        echo $OUTPUT->notification('User has not completed KYC for this activity.', 'warning');
+        $context_data['has_kyc'] = false;
     }
 }
 
-echo html_writer::end_tag('div'); // container
+echo $OUTPUT->render_from_template('local_netrago/report', $context_data);
 
 echo $OUTPUT->footer();

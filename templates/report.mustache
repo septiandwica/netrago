@@ -1,0 +1,174 @@
+<div class="netrago-report-container">
+    <h2>NetraGo Proctoring Report</h2>
+    <p>Activity: {{activity_name}}</p>
+
+    <a href="{{course_url}}" class="btn btn-secondary mb-4">&laquo; Back to Activity</a>
+
+    {{#is_summary}}
+        {{#has_users}}
+            {{#is_quiz}}
+                <table class="generaltable w-100">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Name</th>
+                            <th>Attempt</th>
+                            <th>Score</th>
+                            <th>Submitted</th>
+                            <th>Duration</th>
+                            <th>Trust score</th>
+                            <th>Proctoring report</th>
+                            <th>Results</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#users}}
+                        <tr>
+                            <td>{{email}}</td>
+                            <td>{{fullname}}</td>
+                            <td>{{attempt}}</td>
+                            <td>{{score_str}}</td>
+                            <td>{{submitted}}</td>
+                            <td>{{duration}}</td>
+                            <td><span class="{{trust_class}}"><strong>{{trust_score}}</strong></span></td>
+                            <td><a href="{{report_url}}" class="btn btn-sm btn-{{btn_class}}">{{btn_text}}</a></td>
+                            <td>
+                                {{#review_url}}
+                                    <a href="{{review_url}}" target="_blank">Review</a>
+                                {{/review_url}}
+                                {{^review_url}}
+                                    -
+                                {{/review_url}}
+                            </td>
+                        </tr>
+                        {{/users}}
+                    </tbody>
+                </table>
+            {{/is_quiz}}
+            {{^is_quiz}}
+                <table class="generaltable w-100">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Email</th>
+                            <th>KYC Status</th>
+                            <th>Violations Logged</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#users}}
+                        <tr>
+                            <td>{{fullname}}</td>
+                            <td>{{email}}</td>
+                            <td>{{{kyc_badge}}}</td>
+                            <td>{{{v_badge}}}</td>
+                            <td><a href="{{report_url}}" class="btn btn-sm btn-primary">View Details</a></td>
+                        </tr>
+                        {{/users}}
+                    </tbody>
+                </table>
+            {{/is_quiz}}
+        {{/has_users}}
+        {{^has_users}}
+            <div class="alert alert-info">No proctoring data or KYC records found for this activity yet.</div>
+        {{/has_users}}
+    {{/is_summary}}
+
+    {{^is_summary}}
+        <h3 class="mt-2">Proctoring Report: {{student_name}}</h3>
+        <a href="{{back_url}}" class="mb-4 d-inline-block">&laquo; Back to all students</a>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <p><strong title="The active tracking features enforced during this attempt">Proctoring settings <i class="fa fa-question-circle text-info"></i>:</strong> Activity, {{proctoring_settings}}</p>
+                <p><strong title="Percentage of camera snapshots where a human face was successfully detected">Face presence <i class="fa fa-question-circle text-info"></i>:</strong> {{face_presence}}%</p>
+                <p><strong title="Average number of faces detected in the camera frames. Indicates if multiple people were present.">Average faces per frame <i class="fa fa-question-circle text-info"></i>:</strong> {{average_faces}}</p>
+                <p><strong title="Number of times the student switched tabs, minimized the browser, or clicked outside the quiz window.">Left test <i class="fa fa-question-circle text-info"></i>:</strong> {{left_test}}</p>
+                <p><strong title="Number of camera snapshots containing violations (e.g. face not matching KYC identity, multiple faces, or no face). Does not include screen tab switches.">Screenshots <i class="fa fa-question-circle text-info"></i>:</strong> {{suspicious_count}} suspicious</p>
+                <p class="text-muted small mt-3"><i class="fa fa-info-circle"></i> Camera tracking and Screen tracking are displayed in chronological timelines below.</p>
+            </div>
+        </div>
+        
+        <style>
+            .timeline-row { display: flex; overflow-x: auto; padding-bottom: 15px; margin-bottom: 30px; gap: 15px; }
+            .timeline-item { min-width: 150px; text-align: center; position: relative; }
+            .timeline-time { font-size: 14px; color: #555; margin-bottom: 5px; display: block; font-weight: bold; }
+            .timeline-img { width: 150px; height: 100px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
+            .timeline-img.suspicious { border: 2px solid #dc3545; }
+            .timeline-pill { position: absolute; bottom: 5px; left: 5px; right: 5px; background: rgba(0,0,0,0.7); color: white; font-size: 11px; padding: 3px 5px; border-radius: 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
+            .timeline-pill.suspicious { background: #dc3545; font-weight: bold; }
+            #netrago-lightbox { display: none; position: fixed; z-index: 9999999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.85); text-align: center; }
+            #netrago-lightbox-img { margin: auto; display: inline-block; max-width: 90%; max-height: 90vh; margin-top: 5vh; border-radius: 4px; box-shadow: 0 5px 25px rgba(0,0,0,0.5); }
+            #netrago-lightbox-close { position: absolute; top: 20px; right: 40px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; }
+        </style>
+        
+        <div id="netrago-lightbox" onclick="this.style.display='none'">
+            <span id="netrago-lightbox-close">&times;</span>
+            <img id="netrago-lightbox-img">
+        </div>
+        
+        <script>
+            function showNetragoPreview(src) {
+                document.getElementById("netrago-lightbox-img").src = src;
+                document.getElementById("netrago-lightbox").style.display = "block";
+            }
+        </script>
+        
+        <h4>Camera tracking</h4>
+        <div class="timeline-row">
+            {{#has_camera_logs}}
+                {{#camera_logs}}
+                    <div class="timeline-item">
+                        <span class="timeline-time">{{time_str}}</span>
+                        <img src="{{imagedata}}" class="timeline-img {{is_susp}}" onclick="showNetragoPreview(this.src)" title="{{event_raw}}">
+                        <div class="timeline-pill {{is_susp}}" title="{{event_raw}}">{{event_clean}}</div>
+                    </div>
+                {{/camera_logs}}
+            {{/has_camera_logs}}
+            {{^has_camera_logs}}
+                <p class="text-muted ml-3">No camera data recorded.</p>
+            {{/has_camera_logs}}
+        </div>
+        
+        <h4>Screen tracking</h4>
+        <div class="timeline-row">
+            {{#has_screen_logs}}
+                {{#screen_logs}}
+                    <div class="timeline-item">
+                        <span class="timeline-time">{{time_str}}</span>
+                        <img src="{{imagedata}}" class="timeline-img {{is_susp}}" onclick="showNetragoPreview(this.src)" title="{{event_raw}}">
+                        <div class="timeline-pill {{is_susp}}" title="{{event_raw}}">{{event_clean}}</div>
+                    </div>
+                {{/screen_logs}}
+            {{/has_screen_logs}}
+            {{^has_screen_logs}}
+                <p class="text-muted ml-3">No screen data recorded.</p>
+            {{/has_screen_logs}}
+        </div>
+        
+        <h4 class="mt-4 border-top pt-4">Identity Verification (KYC)</h4>
+        <a href="{{reset_url}}" class="btn btn-sm btn-danger mb-4" onclick="return confirm('Are you sure you want to reset KYC for this user? They will have to retake their selfie and ID.');"><i class="fa fa-refresh"></i> Reset KYC Verification</a>
+        
+        {{#has_kyc}}
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="fa fa-check-circle"></i> KYC Identity Verified ({{kyc_verified_date}})
+                </div>
+                <div class="card-body row">
+                    <div class="col-md-6 text-center">
+                        <h5>Live Selfie</h5>
+                        <img src="{{selfie_src}}" class="kyc-img shadow-sm" alt="Selfie">
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <h5>Official ID Card (KTP/KTM/SIM)</h5>
+                        <img src="{{ktp_src}}" class="kyc-img shadow-sm" alt="ID Card">
+                    </div>
+                </div>
+            </div>
+        {{/has_kyc}}
+        {{^has_kyc}}
+            <div class="alert alert-warning">User has not completed KYC for this activity.</div>
+        {{/has_kyc}}
+    {{/is_summary}}
+</div>
