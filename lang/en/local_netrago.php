@@ -8,7 +8,7 @@
  */
 
 $string['pluginname'] = 'NetraGo';
-$string['netragoproctoring'] = 'NetraGo Options';
+$string['netragoproctoring'] = 'NetraGo Proctoring';
 $string['enablenetrago'] = 'Enable NetraGo';
 $string['requirecamera'] = 'Require Camera';
 $string['requirecamera_help'] = 'If enabled, students must provide access to their webcam during the attempt. Photos will be taken periodically.';
