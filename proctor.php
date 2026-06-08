@@ -106,7 +106,15 @@ if ($cm->modname === 'quiz') {
 // No-JS Fallback / Loading Overlay
 $warningmsg = get_string('js_required_warning', 'local_netrago');
 $context_data = [
-    'requirekyc' => $requirekyc
+    'requirekyc' => $requirekyc,
+    'requirecamera' => $config['requirecamera'],
+    'requireaudio' => $config['requireaudio'],
+    'requirefullscreen' => $config['requirefullscreen'],
+    'requirescreencapture' => $config['requirescreencapture'],
+    'disablecopypaste' => $config['disablecopypaste'],
+    'disablefocusloss' => $config['allow_focusloss'],
+    'disabledevtools' => $config['allow_devtools'],
+    'maxstrikes' => $config['maxstrikes']
 ];
 
 // Generate a hidden form containing all original POST variables
