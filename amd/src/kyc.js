@@ -29,12 +29,12 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 
                 this.modelsReady = true;
                 
-                // If user already clicked "I Agree" while we were downloading
-                if (this.startRequested) {
+                // Automatically start if KYC is not yet completed
+                if (!window.netragoKycCompleted && this.config.requirecamera) {
                     this.startCamera();
                 }
             } catch (err) {
-                $('#kyc-status').text('Failed to load AI models. Please check your connection.');
+                $('#nf-loading-text').text('Failed to load AI models. Please check your connection.');
                 console.error(err);
                 notification.alert('NetraGo Error', 'Failed to load AI models. Please ensure your internet connection is stable.', 'OK');
             }
@@ -50,7 +50,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     $('#kyc-status').text('Camera ready. Please proceed.');
                 })
                 .catch(function(err) {
-                    $('#kyc-status').text("Camera access is required. " + err.message);
+                    $('#nf-loading-text').text("Camera access is required. " + err.message);
                     notification.alert('NetraGo Error', 'Camera access is required for identity verification. Please allow camera access in your browser settings and reload the page.', 'OK');
                 });
         },
@@ -63,17 +63,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         bindEvents: function() {
             var self = this;
 
-            $('#btn-agree-intro').on('click', function() {
-                self.startRequested = true;
-                
-                if (self.modelsReady) {
-                    // Models already downloaded in background! Skip loading screen.
-                    self.startCamera();
-                } else {
-                    // Still downloading, show the loading spinner.
-                    self.showStep('nf-step-kyc-idcard');
-                }
-            });
+            // btn-agree-intro removed, starts automatically after models load.
 
             $('#btn-selfie').on('click', async function() {
                 var btn = $(this);

@@ -26,6 +26,7 @@ if ($action == 'resetkyc' && $userid > 0) {
     require_sesskey();
     $DB->delete_records('local_netrago_kyc', ['userid' => $userid, 'cmid' => $cmid]);
     $DB->delete_records('local_netrago_kyc_attempts', ['userid' => $userid, 'cmid' => $cmid]);
+    $DB->delete_records('local_netrago_logs', ['userid' => $userid, 'cmid' => $cmid]);
     redirect(new moodle_url('/local/netrago/report.php', ['cmid' => $cmid, 'userid' => $userid]), 'KYC data has been reset for this user. They will need to complete verification again.', null, \core\output\notification::NOTIFY_SUCCESS);
 }
 
