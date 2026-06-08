@@ -251,7 +251,23 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 descriptor: JSON.stringify(descriptorArray),
                 sesskey: M.cfg.sesskey
             }).done(function(response) {
-                var res = typeof response === 'string' ? JSON.parse(response) : response;
+                var res;
+                try {
+                    res = typeof response === 'string' ? JSON.parse(response) : response;
+                } catch (e) {
+                    console.error("Raw Server Response:", response);
+                    $('#kyc-result-spinner').hide();
+                    $('#result-title').text('Server Error').addClass('text-danger');
+                    
+                    // Extract title from HTML if it's a Moodle error page
+                    var errorMatch = response.match(/<title>(.*?)<\/title>/);
+                    var errorMsg = errorMatch ? errorMatch[1] : response.substring(0, 150) + '...';
+                    
+                    $('#result-desc').text('The server returned an invalid response (HTML instead of JSON). This usually means a database table is missing or a PHP fatal error occurred. Response snippet: ' + errorMsg);
+                    $('#btn-retry').show();
+                    return;
+                }
+
                 if (res.success) {
                     if (status === 'success') {
                         $('#result-title').text('Verification Successful!');
