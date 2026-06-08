@@ -16,6 +16,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         proctoringStarted: false,
 
         init: function(config) {
+            window.netragoProctorInstance = this;
             this.config = config;
             this.proctoringStarted = false;
             
@@ -79,52 +80,23 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         },
 
         bindPreflightEvents: function() {
-            var self = this;
+            // Events are now handled inline via onclick attributes in the Mustache template
+            // to ensure 100% compatibility across all browsers and prevent event delegation issues.
+        },
+
+        handleScreenShareClick: function(btn) {
+            btn.disabled = true;
+            btn.innerHTML = "<i class='fa fa-spinner fa-spin'></i> Requesting Access...";
+            this.initScreenCapture();
+        },
+
+        handleStartAttemptClick: function(btn) {
+            if (btn.disabled) return;
+            document.getElementById('nf-step-3').classList.remove('active');
+            document.getElementById('nf-step-warning').classList.add('active');
             
-            document.addEventListener('click', function(e) {
-                // Step 1 -> Step 2
-                var btnNext1 = e.target.closest('#nf-btn-next-1');
-                if (btnNext1) {
-                    document.getElementById('nf-step-1').classList.remove('active');
-                    if (self.config.requirescreencapture == 1) {
-                        document.getElementById('nf-step-2').classList.add('active');
-                    } else {
-                        // Skip screen share if not required
-                        document.getElementById('nf-step-3').classList.add('active');
-                    }
-                    return;
-                }
-
-                // Step 2 Screen Share
-                var btnShare = e.target.closest('#nf-btn-share-screen');
-                if (btnShare) {
-                    btnShare.disabled = true;
-                    btnShare.innerHTML = "<i class='fa fa-spinner fa-spin'></i> Requesting Access...";
-                    self.initScreenCapture();
-                    return;
-                }
-
-                // Step 3 Start Button
-                var btnStart = e.target.closest('#nf-btn-start-attempt');
-                if (btnStart && !btnStart.disabled) {
-                    document.getElementById('nf-step-3').classList.remove('active');
-                    document.getElementById('nf-step-warning').classList.add('active');
-                    
-                    // Init camera if required
-                    self.startProctoringAndUnlock();
-                    return;
-                }
-            });
-
-            // Step 3 Consent Checkbox
-            document.addEventListener('change', function(e) {
-                if (e.target && e.target.id === 'nf-consent-checkbox') {
-                    var btnStart = document.getElementById('nf-btn-start-attempt');
-                    if (btnStart) {
-                        btnStart.disabled = !e.target.checked;
-                    }
-                }
-            });
+            // Init camera if required
+            this.startProctoringAndUnlock();
         },
 
         moveToStep3: function() {
