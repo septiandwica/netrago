@@ -615,14 +615,30 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             }
         },
 
-        takeSnapshot: function(eventType) {
+        takeSnapshot: async function(eventType) {
             if (!this.videoElement || !this.stream) return;
 
             var ctx = this.canvasElement.getContext('2d', { willReadFrequently: true });
             ctx.drawImage(this.videoElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
             
-            // Reduce quality to save space
             var dataUrl = this.canvasElement.toDataURL('image/jpeg', 0.5);
+            
+            // Perform instant AI check on this spontaneous snapshot
+            if (this.modelsLoaded && this.baselineDescriptor) {
+                try {
+                    var detections = await faceapi.detectAllFaces(this.canvasElement).withFaceLandmarks().withFaceDescriptors();
+                    if (detections.length === 0) {
+                        eventType += '_face_not_found';
+                    } else if (detections.length > 1) {
+                        eventType += '_multiple_faces';
+                    } else {
+                        var distance = faceapi.euclideanDistance(detections[0].descriptor, this.baselineDescriptor);
+                        if (distance > 0.60) {
+                            eventType += '_unrecognized_face';
+                        }
+                    }
+                } catch(e) {}
+            }
             
             this.logEvent(eventType, dataUrl);
         },
