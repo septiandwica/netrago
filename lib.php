@@ -359,10 +359,21 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         strpos($urlpath, 'startattempt.php') !== false || 
         strpos($urlpath, 'summary.php') !== false || 
         strpos($urlpath, 'processattempt.php') !== false) {
+        
+        $hide_widgets_css = "<style>
+            #aurasupport-widget-container, 
+            .aurasupport-floating-btn,
+            #chat-widget-container { 
+                display: none !important; 
+            }
+        </style>";
+        
         if (strpos($urlpath, 'startattempt.php') !== false) {
             // Force the confirmation modal to fit in the iframe if needed
             $CFG->additionalhtmlhead .= "<style>body { background: transparent !important; } .moodle-dialogue-base { left: 50% !important; transform: translateX(-50%) !important; }</style>";
         }
+        
+        $CFG->additionalhtmlhead .= $hide_widgets_css;
         return; // Stop here. The iframe should NOT load the AMD script for NetraGo proctoring.
     }
     
