@@ -70,9 +70,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 // kyc.js will handle the UI until KYC is done
                 var self = this;
                 $(document).on('netrago_kyc_done', function() {
-                    $('.netrago-step').removeClass('active').hide();
+                    $('.netrago-step').removeClass('active').css('display', '');
                     document.getElementById('nf-step-1').classList.add('active');
-                    document.getElementById('nf-step-1').style.display = 'block';
                 });
             }
 

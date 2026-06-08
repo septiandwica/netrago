@@ -57,8 +57,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         },
 
         showStep: function(stepId) {
-            $('.netrago-step').removeClass('active').hide();
-            $('#' + stepId).addClass('active').show();
+            $('.netrago-step').removeClass('active');
+            $('#' + stepId).addClass('active');
         },
 
         bindEvents: function() {
