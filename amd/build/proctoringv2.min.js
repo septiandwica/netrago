@@ -391,19 +391,31 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     if (window.isSubmitting) return; // Allow exit during submit
                     self.logEvent('tab_switch');
                     
-                    // If camera is enabled, take a snapshot immediately upon suspicious event
-                    if (self.config.requirecamera == 1 && self.videoElement) {
-                        self.takeSnapshot('tab_switch_snapshot');
-                    }
-                    if (self.config.requirescreencapture == 1 && self.screenVideoElement) {
-                        self.takeScreenSnapshot('tab_switch_snapshot');
-                    }
+                    // Delay screenshot by 1s to allow video stream to catch up to the new tab
+                    setTimeout(function() {
+                        if (self.config.requirecamera == 1 && self.videoElement) {
+                            self.takeSnapshot('tab_switch_snapshot');
+                        }
+                        if (self.config.requirescreencapture == 1 && self.screenVideoElement) {
+                            self.takeScreenSnapshot('tab_switch_snapshot');
+                        }
+                    }, 1000);
                 }
             });
             window.addEventListener('blur', function() {
                 if (!self.proctoringStarted) return;
                 if (window.isSubmitting) return; // Allow exit during submit
                 self.logEvent('focus_loss');
+                
+                // Delay screenshot by 1s to capture what they are looking at
+                setTimeout(function() {
+                    if (self.config.requirecamera == 1 && self.videoElement) {
+                        self.takeSnapshot('focus_loss_snapshot');
+                    }
+                    if (self.config.requirescreencapture == 1 && self.screenVideoElement) {
+                        self.takeScreenSnapshot('focus_loss_snapshot');
+                    }
+                }, 1000);
             });
         },
 
