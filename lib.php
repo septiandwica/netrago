@@ -417,14 +417,21 @@ function local_netrago_extend_navigation(global_navigation $nav) {
         return; // Stop here. The iframe should NOT load the AMD script for NetraGo proctoring.
     }
     
-    // If we are here, we must be on proctor.php. Load proctoring.js!
+    // If we are here, we must be on proctor.php. Load proctoringv2.js!
+    $is_seb = (!empty($_SERVER['HTTP_X_SAFEEXAMBROWSER_CONFIGKEYHASH']) || 
+               !empty($_SERVER['HTTP_X_SAFEEXAMBROWSER_REQUESTHASH']) || 
+               (isset($_SERVER['HTTP_USER_AGENT']) && stripos($_SERVER['HTTP_USER_AGENT'], 'SafeExamBrowser') !== false) ||
+               optional_param('seb', 0, PARAM_INT) == 1);
+
     // Inject our AMD module.
     $config = [
         'cmid' => $cmid,
         'courseid' => (int)$cm->course,
         'current_strikes' => $violation_count,
         'userid' => $USER->id,
+        'is_seb' => $is_seb ? 1 : 0,
         'requirecamera' => get_config('local_netrago', 'allow_camera') ? $settings->requirecamera : 0,
+        'requireaudio' => get_config('local_netrago', 'allow_audio') ? ($settings->requireaudio ?? 0) : 0,
         'requirefullscreen' => get_config('local_netrago', 'allow_fullscreen') ? $settings->requirefullscreen : 0,
         'requirescreencapture' => get_config('local_netrago', 'allow_screencapture') ? ($settings->requirescreencapture ?? 0) : 0,
         'disablecopypaste' => get_config('local_netrago', 'allow_copypaste') ? $settings->disablecopypaste : 0,
@@ -436,7 +443,7 @@ function local_netrago_extend_navigation(global_navigation $nav) {
     ];
 
     $PAGE->requires->js(new moodle_url('/local/netrago/amd/src/face-api.min.js'));
-    $PAGE->requires->js_call_amd('local_netrago/proctoring', 'init', [$config]);
+    $PAGE->requires->js_call_amd('local_netrago/proctoringv2', 'init', [$config]);
 }
 
 /**

@@ -52,6 +52,12 @@
 
 <div id="netrago-preflight-container">
     <div class="netrago-card">
+        {{#is_seb}}
+        <div style="display:inline-flex; align-items:center; gap:6px; background:#e8f5e9; border:1px solid #c8e6c9; color:#1b5e20; font-weight:600; padding:6px 14px; border-radius:20px; font-size:13px; margin-bottom:15px;">
+            <i class="fa fa-shield"></i> Safe Exam Browser (SEB) Kiosk Active
+        </div>
+        {{/is_seb}}
+
         <!-- Loading Step -->
         <div id="nf-step-loading" class="netrago-step active">
             <div class="netrago-spinner" id="nf-loading-spinner"></div>

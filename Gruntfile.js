@@ -4,7 +4,9 @@ module.exports = function(grunt) {
             dist: {
                 files: {
                     'amd/build/kyc.min.js': ['amd/src/kyc.js'],
-                    'amd/build/proctoring.min.js': ['amd/src/proctoring.js']
+                    'amd/build/kycv2.min.js': ['amd/src/kycv2.js'],
+                    'amd/build/proctoring.min.js': ['amd/src/proctoring.js'],
+                    'amd/build/proctoringv2.min.js': ['amd/src/proctoringv2.js']
                 }
             }
         },

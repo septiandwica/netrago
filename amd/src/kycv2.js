@@ -14,12 +14,17 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         init: function(config) {
             this.config = config;
             window.netragoKycInstance = this;
+            this.isSEB = (this.config && this.config.is_seb) || 
+                         (window.netragoIsSEB === true) || 
+                         (navigator.userAgent && navigator.userAgent.indexOf('SafeExamBrowser') !== -1);
             
-            if (window.screen && window.screen.isExtended === undefined) {
+            // Only show browser recommendations if NOT running inside Safe Exam Browser
+            if (!this.isSEB && window.screen && window.screen.isExtended === undefined) {
                 notification.alert('Browser Recommendation', 'You are using a browser that does not fully support NetraGo Advanced Security (e.g., Safari or Firefox). For the best experience and to avoid false violation flags, we strongly recommend using Google Chrome or Microsoft Edge.', 'I Understand');
             }
             
-            if (window.screen && window.screen.isExtended) {
+            // In SEB, dual-monitor policy is already enforced natively by SEB kiosk
+            if (!this.isSEB && window.screen && window.screen.isExtended) {
                 $('#nf-loading-spinner').hide();
                 $('#nf-loading-text').text('Multiple Displays Detected');
                 $('#nf-loading-desc').html('<span class="text-danger">You must disconnect all external monitors to proceed with the exam. Dual-monitor setups are prohibited.</span>');
@@ -58,31 +63,49 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
         startCamera: function() {
             var self = this;
-            navigator.mediaDevices.getUserMedia({ video: {}, audio: true })
-                .then(function(stream) {
-                    var track = stream.getVideoTracks()[0];
-                    var label = track.label.toLowerCase();
-                    var forbidden = ['obs', 'virtual', 'manycam', 'splitcam', 'logicapture', 'xsplit', 'camtwist'];
-                    
-                    var isForbidden = forbidden.some(function(keyword) {
-                        return label.indexOf(keyword) !== -1;
-                    });
-                    
-                    if (isForbidden) {
-                        stream.getTracks().forEach(t => t.stop());
-                        $('#nf-loading-text').text("Virtual Cameras are prohibited. (" + track.label + ")");
-                        notification.alert('NetraGo Security Warning', 'Virtual cameras (' + track.label + ') are strictly prohibited. Please use a real hardware webcam and reload the page.', 'I Understand');
+            var needAudio = (self.config && self.config.requireaudio == 1);
+            var constraints = {
+                video: { width: { ideal: 640 }, height: { ideal: 480 } },
+                audio: needAudio
+            };
+
+            var handleStream = function(stream) {
+                var track = stream.getVideoTracks()[0];
+                var label = (track && track.label) ? track.label.toLowerCase() : '';
+                var forbidden = ['obs', 'virtual', 'manycam', 'splitcam', 'logicapture', 'xsplit', 'camtwist'];
+                
+                var isForbidden = forbidden.some(function(keyword) {
+                    return label.indexOf(keyword) !== -1;
+                });
+                
+                if (isForbidden) {
+                    stream.getTracks().forEach(t => t.stop());
+                    $('#nf-loading-text').text("Virtual Cameras are prohibited. (" + (track.label || 'Unknown') + ")");
+                    notification.alert('NetraGo Security Warning', 'Virtual cameras (' + (track.label || 'Unknown') + ') are strictly prohibited. Please use a real hardware webcam and reload the page.', 'I Understand');
+                    return;
+                }
+                
+                self.videoElement.srcObject = stream;
+                $('#kyc-video-container').show();
+                self.showStep('nf-step-kyc-selfie');
+                $('#kyc-status').text('Camera ready. Please proceed.');
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(handleStream)
+                .catch(function(err) {
+                    // Fallback: If audio failed or specific constraints failed, retry with pure video
+                    if (constraints.audio) {
+                        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                            .then(handleStream)
+                            .catch(function(err2) {
+                                $('#nf-loading-text').text("Camera access is required. " + err2.message);
+                                notification.alert('NetraGo Error', 'Camera access is required for identity verification. Please allow camera access in your browser/SEB settings and reload the page.', 'OK');
+                            });
                         return;
                     }
-                    
-                    self.videoElement.srcObject = stream;
-                    $('#kyc-video-container').show();
-                    self.showStep('nf-step-kyc-selfie');
-                    $('#kyc-status').text('Camera ready. Please proceed.');
-                })
-                .catch(function(err) {
                     $('#nf-loading-text').text("Camera access is required. " + err.message);
-                    notification.alert('NetraGo Error', 'Camera access is required for identity verification. Please allow camera access in your browser settings and reload the page.', 'OK');
+                    notification.alert('NetraGo Error', 'Camera access is required for identity verification. Please allow camera access in your browser/SEB settings and reload the page.', 'OK');
                 });
         },
 

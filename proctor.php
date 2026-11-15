@@ -76,11 +76,18 @@ if ($master_field) {
 }
 $descriptor_to_use = $kyc ? $kyc->descriptor : ($master_descriptor ? $master_descriptor : null);
 
+// Detect Safe Exam Browser (SEB) via HTTP headers or User-Agent
+$is_seb = (!empty($_SERVER['HTTP_X_SAFEEXAMBROWSER_CONFIGKEYHASH']) || 
+           !empty($_SERVER['HTTP_X_SAFEEXAMBROWSER_REQUESTHASH']) || 
+           (isset($_SERVER['HTTP_USER_AGENT']) && stripos($_SERVER['HTTP_USER_AGENT'], 'SafeExamBrowser') !== false) ||
+           optional_param('seb', 0, PARAM_INT) == 1);
+
 $config = [
     'cmid' => $cmid,
     'courseid' => (int)$cm->course,
     'current_strikes' => $violation_count,
     'userid' => $USER->id,
+    'is_seb' => $is_seb ? 1 : 0,
     'requirecamera' => get_config('local_netrago', 'allow_camera') ? ($settings->requirecamera ?? 0) : 0,
     'requireaudio' => get_config('local_netrago', 'allow_audio') ? ($settings->requireaudio ?? 0) : 0,
     'requirefullscreen' => get_config('local_netrago', 'allow_fullscreen') ? ($settings->requirefullscreen ?? 0) : 0,
@@ -107,6 +114,7 @@ if ($cm->modname === 'quiz') {
 // No-JS Fallback / Loading Overlay
 $warningmsg = get_string('js_required_warning', 'local_netrago');
 $context_data = [
+    'is_seb' => $is_seb,
     'requirekyc' => $requirekyc,
     'requirecamera' => $config['requirecamera'],
     'requireaudio' => $config['requireaudio'],
@@ -133,11 +141,7 @@ $hidden_form_html .= "</form>";
 
 $context_data['hidden_form'] = $hidden_form_html;
 
-echo $OUTPUT->render_from_template('local_netrago/proctor', $context_data);
-
-
 $faceapi_url = new moodle_url('/local/netrago/amd/src/face-api.min.js');
-$kyc_js_url = new moodle_url('/local/netrago/amd/src/kyc.min.js'); // Assuming we load it as well, or we can use require JS
 $js_injection = "
 <script>var _temp_define = window.define; window.define = undefined;</script>
 <script src=\"{$faceapi_url}\"></script>
@@ -146,6 +150,7 @@ $js_injection = "
     window.netragoKycCompleted = " . (($kyc || !$requirekyc) ? 'true' : 'false') . ";
     window.netragoHasMasterFace = " . ($master_descriptor ? 'true' : 'false') . ";
     window.netragoKycAjaxUrl = '" . (new moodle_url('/local/netrago/ajax_kyc.php'))->out(false) . "';
+    window.netragoIsSEB = " . ($is_seb ? 'true' : 'false') . ";
 </script>
 ";
 $CFG->additionalhtmlhead .= $js_injection;
@@ -156,9 +161,13 @@ $PAGE->requires->js_call_amd('local_netrago/kycv2', 'init', [[
     'ajaxurl' => (new moodle_url('/local/netrago/ajax_kyc.php'))->out(false),
     'has_master_face' => $master_descriptor ? true : false,
     'requirecamera' => $settings->requirecamera,
-    'requirekyc' => $requirekyc
+    'requireaudio' => $settings->requireaudio ?? 0,
+    'requirekyc' => $requirekyc,
+    'is_seb' => $is_seb ? 1 : 0
 ]]);
 
 echo $OUTPUT->header();
+
+echo $OUTPUT->render_from_template('local_netrago/proctor', $context_data);
 
 echo $OUTPUT->footer();

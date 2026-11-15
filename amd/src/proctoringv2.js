@@ -19,14 +19,19 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             window.netragoProctorInstance = this;
             this.config = config;
             this.proctoringStarted = false;
+            this.isSEB = (this.config && this.config.is_seb) || 
+                         (window.netragoIsSEB === true) || 
+                         (navigator.userAgent && navigator.userAgent.indexOf('SafeExamBrowser') !== -1);
             
             this.initOfflineVault();
             
-            if (window.screen && window.screen.isExtended === undefined) {
+            // Only show browser recommendation if NOT running inside Safe Exam Browser
+            if (!this.isSEB && window.screen && window.screen.isExtended === undefined) {
                 notification.alert('Browser Recommendation', 'You are using a browser that does not fully support NetraGo Advanced Security (e.g., Safari or Firefox). For the best experience and to avoid false violation flags, we strongly recommend using Google Chrome or Microsoft Edge.', 'I Understand');
             }
             
-            if (window.screen && window.screen.isExtended) {
+            // In SEB, dual-monitor policy is enforced natively by SEB kiosk at startup
+            if (!this.isSEB && window.screen && window.screen.isExtended) {
                 document.getElementById('netrago-preflight-container').style.display = 'block';
                 document.getElementById('netrago-quiz-frame').style.display = 'none';
                 
@@ -99,10 +104,14 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 $('.netrago-step').removeClass('active').css('display', '');
                 var step2 = document.getElementById('nf-step-2');
                 var step3 = document.getElementById('nf-step-3');
-                if (self.config.requirescreencapture == 1) {
+                if (!self.isSEB && self.config.requirescreencapture == 1) {
                     if (step2) step2.classList.add('active');
                 } else {
-                    if (step3) step3.classList.add('active');
+                    if (self.config.requirecamera == 1 && !self.stream) {
+                        self.requestCameraForPreview();
+                    } else {
+                        self.moveToStep3();
+                    }
                 }
             });
 
@@ -128,10 +137,14 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     } else {
                         var step2 = document.getElementById('nf-step-2');
                         var step3 = document.getElementById('nf-step-3');
-                        if (self.config.requirescreencapture == 1) {
+                        if (!self.isSEB && self.config.requirescreencapture == 1) {
                             if (step2) step2.classList.add('active');
                         } else {
-                            if (step3) step3.classList.add('active');
+                            if (self.config.requirecamera == 1 && !self.stream) {
+                                self.requestCameraForPreview();
+                            } else {
+                                self.moveToStep3();
+                            }
                         }
                     }
                 };
@@ -183,49 +196,72 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 step3.classList.add('active');
                 step3.style.display = 'block';
             }
+            // Auto check consent if in SEB or enable start button
+            var consentCheckbox = document.getElementById('nf-consent-checkbox');
+            if (consentCheckbox && consentCheckbox.checked) {
+                var btnStart = document.getElementById('nf-btn-start-attempt');
+                if (btnStart) btnStart.disabled = false;
+            }
         },
         
         requestCameraForPreview: function() {
             var self = this;
-            navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: self.config.requireaudio == 1 })
-                .then(function(stream) {
-                    var track = stream.getVideoTracks()[0];
-                    var label = track.label.toLowerCase();
-                    var forbidden = ['obs', 'virtual', 'manycam', 'splitcam', 'logicapture', 'xsplit', 'camtwist'];
-                    
-                    var isForbidden = forbidden.some(function(keyword) {
-                        return label.indexOf(keyword) !== -1;
-                    });
-                    
-                    if (isForbidden) {
-                        stream.getTracks().forEach(t => t.stop());
-                        notification.alert('NetraGo Security Warning', 'Virtual cameras (' + track.label + ') are strictly prohibited. Please use a real hardware webcam and reload the page.', 'I Understand');
-                        var btnShare2 = document.getElementById('nf-btn-share-screen');
-                        if (btnShare2) {
-                            btnShare2.disabled = false;
-                            btnShare2.innerHTML = "<i class='fa fa-desktop'></i> Allow Share Screen";
-                        }
+            var needAudio = (self.config && self.config.requireaudio == 1);
+            var constraints = { 
+                video: { width: 320, height: 240 }, 
+                audio: needAudio 
+            };
+
+            var handleStream = function(stream) {
+                var track = stream.getVideoTracks()[0];
+                var label = (track && track.label) ? track.label.toLowerCase() : '';
+                var forbidden = ['obs', 'virtual', 'manycam', 'splitcam', 'logicapture', 'xsplit', 'camtwist'];
+                
+                var isForbidden = forbidden.some(function(keyword) {
+                    return label.indexOf(keyword) !== -1;
+                });
+                
+                if (isForbidden) {
+                    stream.getTracks().forEach(t => t.stop());
+                    notification.alert('NetraGo Security Warning', 'Virtual cameras (' + (track.label || 'Unknown') + ') are strictly prohibited. Please use a real hardware webcam and reload the page.', 'I Understand');
+                    var btnShare2 = document.getElementById('nf-btn-share-screen');
+                    if (btnShare2) {
+                        btnShare2.disabled = false;
+                        btnShare2.innerHTML = "<i class='fa fa-desktop'></i> Allow Share Screen";
+                    }
+                    return;
+                }
+            
+                self.stream = stream;
+                
+                var video = document.createElement('video');
+                video.autoplay = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.srcObject = stream;
+                video.style.display = 'none';
+                document.body.appendChild(video);
+                self.videoElement = video;
+                
+                var preview = document.getElementById('nf-preview-camera');
+                if (preview) { preview.srcObject = stream; }
+                
+                self.moveToStep3();
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(handleStream)
+                .catch(function(err) {
+                    // Fallback: If audio failed, retry with pure video
+                    if (constraints.audio) {
+                        navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: false })
+                            .then(handleStream)
+                            .catch(function(err2) {
+                                notification.alert('NetraGo Error', 'Camera permission denied. You must allow camera access to proceed.', 'OK');
+                            });
                         return;
                     }
-                
-                    self.stream = stream;
-                    
-                    var video = document.createElement('video');
-                    video.autoplay = true;
-                    video.muted = true;
-                    video.playsInline = true;
-                    video.srcObject = stream;
-                    video.style.display = 'none';
-                    document.body.appendChild(video);
-                    self.videoElement = video;
-                    
-                    var preview = document.getElementById('nf-preview-camera');
-                    if (preview) { preview.srcObject = stream; }
-                    
-                    self.moveToStep3();
-                })
-                .catch(function(err) {
-                    notification.alert('NetraGo Error', 'Camera permission denied. You must allow it to proceed.', 'OK');
+                    notification.alert('NetraGo Error', 'Camera permission denied. You must allow camera access to proceed.', 'OK');
                     var btnShare = document.getElementById('nf-btn-share-screen');
                     if (btnShare) {
                         btnShare.disabled = false;
@@ -292,6 +328,16 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
 
         initScreenCapture: function() {
             var self = this;
+            if (self.isSEB) {
+                // In Safe Exam Browser, desktop kiosk is already locked down at the OS level
+                if (self.config.requirecamera == 1 && !self.stream) {
+                    self.requestCameraForPreview();
+                } else {
+                    self.moveToStep3();
+                }
+                return;
+            }
+
             if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
                 var warningText = document.getElementById('netrago-warning-text');
                 if (warningText) {
@@ -493,8 +539,37 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         monitorFocusLoss: function() {
             var self = this;
             window.addEventListener('blur', function() {
-                if (!self.proctoringStarted) return;
-                self.handleViolation('Tab switching (focus loss).');
+                if (!self.proctoringStarted || window.isSubmitting) return;
+
+                // Debounce to distinguish focus shift into child quiz iframe from true focus loss
+                setTimeout(function() {
+                    var frame = document.getElementById('netrago-quiz-frame');
+                    var isFrameActive = false;
+                    try {
+                        if (frame && (document.activeElement === frame || (frame.contentDocument && frame.contentDocument.hasFocus()))) {
+                            isFrameActive = true;
+                        }
+                    } catch(e) {}
+
+                    if (isFrameActive || document.hasFocus()) {
+                        return; // False alarm: focus moved into the quiz iframe
+                    }
+
+                    // Inside SEB, the entire desktop is locked; transient system alerts or selects are safe
+                    if (self.isSEB) {
+                        return;
+                    }
+
+                    self.handleViolation('Focus lost (clicked outside quiz tab).');
+                    setTimeout(function() {
+                        if (self.config.requirecamera == 1 && self.videoElement) {
+                            self.takeSnapshot('focus_loss_snapshot');
+                        }
+                        if (self.config.requirescreencapture == 1 && self.screenVideoElement) {
+                            self.takeScreenSnapshot('focus_loss_snapshot');
+                        }
+                    }, 1000);
+                }, 500);
             });
         },
 
@@ -516,6 +591,11 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         enforceFullscreen: function() {
             var self = this;
             
+            // In Safe Exam Browser, kiosk fullscreen is already enforced at OS level
+            if (self.isSEB) {
+                return;
+            }
+
             var createFSOVerlay = function() {
                 var banner = document.getElementById('netrago-fs-banner');
                 if (!banner) {
@@ -591,25 +671,12 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     }, 1000);
                 }
             });
-            window.addEventListener('blur', function() {
-                if (!self.proctoringStarted) return;
-                if (window.isSubmitting) return; // Allow exit during submit
-                self.handleViolation('Focus lost (clicked outside quiz tab).');
-                
-                // Delay screenshot by 1s to capture what they are looking at
-                setTimeout(function() {
-                    if (self.config.requirecamera == 1 && self.videoElement) {
-                        self.takeSnapshot('focus_loss_snapshot');
-                    }
-                    if (self.config.requirescreencapture == 1 && self.screenVideoElement) {
-                        self.takeScreenSnapshot('focus_loss_snapshot');
-                    }
-                }, 1000);
-            });
         },
 
         monitorMultipleDisplays: function() {
             var self = this;
+            if (self.isSEB) return; // In SEB, multiple displays are prohibited by SEB kiosk natively
+
             setInterval(function() {
                 if (!self.proctoringStarted) return;
                 if (window.screen && window.screen.isExtended) {
