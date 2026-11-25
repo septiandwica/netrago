@@ -76,7 +76,9 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 this.enforceFullscreen();
             }
 
-            this.monitorTabSwitching();
+            if (this.config.allow_tabswitch != 0) {
+                this.monitorTabSwitching();
+            }
             
             if (this.config.allow_focusloss == 1) {
                 this.monitorFocusLoss();
@@ -89,6 +91,10 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             
             this.monitorMultipleDisplays();
             
+            if (this.config.allow_dualcam == 1) {
+                this.initMobileSideCamMonitor();
+            }
+
             this.syncOfflineVault();
 
             this.bindSubmitListener();
@@ -178,6 +184,9 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 btnStart.onclick = function(e) {
                     if (e) e.preventDefault();
                     if (this.disabled) return;
+                    if (self.config.requirefullscreen == 1 && !self.isSEB) {
+                        self.requestFullscreenDirect();
+                    }
                     document.getElementById('nf-step-3').classList.remove('active');
                     document.getElementById('nf-step-warning').classList.add('active');
                     self.startProctoringAndUnlock();
@@ -298,13 +307,20 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     self.takeSnapshot('snapshot');
                 }, 60000);
 
-                if (this.baselineDescriptor) {
-                    if (self.config.requireaudio == 1) {
-                        self.monitorAudio();
-                    }
-                    self.faceLoopId = setInterval(function() {
-                        self.verifyFaceLoop();
-                    }, 10000);
+                if (self.config.requireaudio == 1) {
+                    self.monitorAudio();
+                }
+
+                self.faceLoopId = setInterval(function() {
+                    self.verifyFaceLoop();
+                }, 4000);
+
+                // Initialize isolated Web Worker for forbidden object detection (cell phone, book, laptop)
+                if (self.config.allow_object_detection != 0) {
+                    self.initObjectDetector();
+                    self.objectLoopId = setInterval(function() {
+                        self.detectObjectsLoop();
+                    }, 5000);
                 }
 
                 setTimeout(function() {
@@ -414,6 +430,278 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 frame.focus();
             }
             this.proctoringStarted = true;
+
+            if (this.config.requirefullscreen == 1 && !this.isSEB) {
+                var isFS = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+                if (!isFS) {
+                    this.requestFullscreenDirect();
+                }
+            }
+
+            if (this.config.requirecamera == 1 && this.stream) {
+                this.createProctorHud();
+            }
+        },
+
+        requestFullscreenDirect: function() {
+            var docElm = document.documentElement;
+            try {
+                if (docElm.requestFullscreen) {
+                    docElm.requestFullscreen().catch(function(e) { console.warn("Fullscreen request error:", e); });
+                } else if (docElm.webkitRequestFullscreen) {
+                    docElm.webkitRequestFullscreen();
+                } else if (docElm.mozRequestFullScreen) {
+                    docElm.mozRequestFullScreen();
+                } else if (docElm.msRequestFullscreen) {
+                    docElm.msRequestFullscreen();
+                }
+            } catch (err) {
+                console.warn("Fullscreen trigger exception:", err);
+            }
+        },
+
+        createProctorHud: function() {
+            var self = this;
+            if (document.getElementById('netrago-proctor-hud')) return;
+
+            var hud = document.createElement('div');
+            hud.id = 'netrago-proctor-hud';
+            hud.style.cssText = 'position:fixed; bottom:20px; right:20px; width:215px; background:rgba(15, 23, 42, 0.94); border:1px solid rgba(255, 255, 255, 0.2); border-radius:12px; box-shadow:0 12px 30px rgba(0,0,0,0.5); z-index:2147483640; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; backdrop-filter:blur(8px); transition:border-color 0.3s ease; user-select:none;';
+
+            hud.innerHTML = 
+                '<div id="netrago-hud-header" style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:rgba(30, 41, 59, 0.85); border-bottom:1px solid rgba(255, 255, 255, 0.1); cursor:move;">' +
+                    '<div style="display:flex; align-items:center; gap:6px;">' +
+                        '<span id="netrago-hud-dot" style="width:8px; height:8px; border-radius:50%; background:#22c55e; display:inline-block; box-shadow:0 0 8px #22c55e;"></span>' +
+                        '<span id="netrago-hud-title" style="font-size:10px; font-weight:700; color:#f8fafc; letter-spacing:0.4px; text-transform:uppercase;">AI Proctor Active</span>' +
+                    '</div>' +
+                    '<span id="netrago-hud-strikes-badge" style="font-size:10px; font-weight:700; background:rgba(239, 68, 68, 0.2); color:#fca5a5; padding:2px 6px; border-radius:10px; border:1px solid rgba(239, 68, 68, 0.4);">Strikes: ' + self.strikes + (self.config.maxstrikes > 0 ? ('/' + self.config.maxstrikes) : '') + '</span>' +
+                '</div>' +
+                '<div style="position:relative; width:215px; height:140px; background:#000; overflow:hidden;">' +
+                    '<video id="netrago-hud-video" autoplay muted playsinline style="width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:block;"></video>' +
+                    '<canvas id="netrago-hud-canvas" width="215" height="140" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></canvas>' +
+                    '<div id="netrago-hud-warning-pill" style="position:absolute; bottom:6px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:#22c55e; font-size:10px; font-weight:600; padding:2px 8px; border-radius:12px; white-space:nowrap; border:1px solid rgba(34, 197, 94, 0.4); pointer-events:none;">Face Verified</div>' +
+                '</div>' +
+                '<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 12px; background:rgba(15, 23, 42, 0.95); font-size:10px; color:#94a3b8; border-top:1px solid rgba(255, 255, 255, 0.08);">' +
+                    '<div style="display:flex; align-items:center; gap:5px;">' +
+                        '<i class="fa fa-microphone" style="font-size:10px; color:#64748b;"></i>' +
+                        '<div style="width:45px; height:4px; background:#334155; border-radius:2px; overflow:hidden;">' +
+                            '<div id="netrago-hud-vu-bar" style="width:15%; height:100%; background:#22c55e; transition:width 0.1s ease;"></div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<span id="netrago-hud-dualcam-badge" style="font-size:9px; color:' + (self.mobileSideCamConnected ? '#4ade80' : '#94a3b8') + '; font-weight:600;">' + (self.mobileSideCamConnected ? 'Side-Cam: LIVE' : 'Single Cam') + '</span>' +
+                '</div>';
+
+            document.body.appendChild(hud);
+
+            var hudVideo = document.getElementById('netrago-hud-video');
+            if (hudVideo && self.stream) {
+                hudVideo.srcObject = self.stream;
+            }
+
+            self.makeDraggable(hud, document.getElementById('netrago-hud-header'));
+        },
+
+        makeDraggable: function(element, handle) {
+            if (!element || !handle) return;
+            var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            handle.onmousedown = function(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = function() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                };
+                document.onmousemove = function(ev) {
+                    ev = ev || window.event;
+                    ev.preventDefault();
+                    pos1 = pos3 - ev.clientX;
+                    pos2 = pos4 - ev.clientY;
+                    pos3 = ev.clientX;
+                    pos4 = ev.clientY;
+                    element.style.top = (element.offsetTop - pos2) + "px";
+                    element.style.left = (element.offsetLeft - pos1) + "px";
+                    element.style.bottom = "auto";
+                    element.style.right = "auto";
+                };
+            };
+        },
+
+        playAlertChime: function(isCritical) {
+            try {
+                var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                var osc = audioCtx.createOscillator();
+                var gain = audioCtx.createGain();
+                osc.type = isCritical ? 'sawtooth' : 'sine';
+                var freq1 = isCritical ? 740 : 587.33;
+                var freq2 = isCritical ? 440 : 880;
+                osc.frequency.setValueAtTime(freq1, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(freq2, audioCtx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.35);
+            } catch (e) {}
+        },
+
+        initObjectDetector: function() {
+            var self = this;
+            if (self.objectWorker) return;
+
+            try {
+                var workerCode = [
+                    'importScripts("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js", "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js");',
+                    'var model = null;',
+                    'cocoSsd.load({ base: "lite_mobilenet_v2" }).then(function(m) {',
+                    '    model = m;',
+                    '    self.postMessage({ type: "ready" });',
+                    '}).catch(function(err) {',
+                    '    self.postMessage({ type: "error", message: err && err.message ? err.message : "Model load failed" });',
+                    '});',
+                    'self.onmessage = function(e) {',
+                    '    if (!model || !e.data || !e.data.imageData) return;',
+                    '    model.detect(e.data.imageData).then(function(predictions) {',
+                    '        var forbidden = predictions.filter(function(p) {',
+                    '            return (p.class === "cell phone" || p.class === "book" || p.class === "laptop") && p.score >= 0.55;',
+                    '        });',
+                    '        self.postMessage({ type: "result", objects: forbidden });',
+                    '    }).catch(function() {});',
+                    '};'
+                ].join('\n');
+
+                var blob = new Blob([workerCode], { type: 'application/javascript' });
+                var workerUrl = URL.createObjectURL(blob);
+                self.objectWorker = new Worker(workerUrl);
+                self.objectWorkerReady = false;
+
+                self.objectWorker.onmessage = function(e) {
+                    if (!e.data) return;
+                    if (e.data.type === 'ready') {
+                        self.objectWorkerReady = true;
+                    } else if (e.data.type === 'result' && e.data.objects && e.data.objects.length > 0) {
+                        var topObj = e.data.objects[0];
+                        var objLabel = topObj.class.toUpperCase() + ' (' + Math.round(topObj.score * 100) + '%)';
+
+                        // Draw red bounding box on HUD canvas
+                        var hudCanvas = document.getElementById('netrago-hud-canvas');
+                        if (hudCanvas && topObj.bbox) {
+                            var ctx = hudCanvas.getContext('2d');
+                            var scaleX = hudCanvas.width / 320;
+                            var scaleY = hudCanvas.height / 240;
+                            var bx = (320 - (topObj.bbox[0] + topObj.bbox[2])) * scaleX;
+                            var by = topObj.bbox[1] * scaleY;
+                            var bw = topObj.bbox[2] * scaleX;
+                            var bh = topObj.bbox[3] * scaleY;
+                            ctx.strokeStyle = '#ef4444';
+                            ctx.lineWidth = 3;
+                            ctx.strokeRect(bx, by, bw, bh);
+                            ctx.fillStyle = '#ef4444';
+                            ctx.font = 'bold 9px sans-serif';
+                            ctx.fillText(objLabel, bx + 4, by > 15 ? by - 4 : by + 12);
+                        }
+
+                        var hudPill = document.getElementById('netrago-hud-warning-pill');
+                        var hudDot = document.getElementById('netrago-hud-dot');
+                        var hudTitle = document.getElementById('netrago-hud-title');
+                        if (hudPill) {
+                            hudPill.innerText = objLabel;
+                            hudPill.style.color = '#ef4444';
+                            hudPill.style.borderColor = '#ef4444';
+                        }
+                        if (hudDot) {
+                            hudDot.style.background = '#ef4444';
+                            hudDot.style.boxShadow = '0 0 8px #ef4444';
+                        }
+                        if (hudTitle) {
+                            hudTitle.innerText = 'ALERT: OBJECT';
+                        }
+
+                        self.playAlertChime(true);
+                        self.handleViolation('Prohibited object detected in camera frame: ' + topObj.class + '.');
+                    }
+                };
+            } catch (err) {
+                console.warn("NetraGo Object Detection Worker failed to initialize:", err);
+            }
+        },
+
+        detectObjectsLoop: function() {
+            if (!this.proctoringStarted || !this.videoElement || !this.stream || !this.objectWorker || !this.objectWorkerReady) return;
+            if (this.videoElement.videoWidth === 0) return;
+
+            try {
+                var offCanvas = document.createElement('canvas');
+                offCanvas.width = 320;
+                offCanvas.height = 240;
+                var ctx = offCanvas.getContext('2d', { willReadFrequently: true });
+                ctx.drawImage(this.videoElement, 0, 0, 320, 240);
+                var imgData = ctx.getImageData(0, 0, 320, 240);
+                this.objectWorker.postMessage({ imageData: imgData }, [imgData.data.buffer]);
+            } catch (e) {}
+        },
+
+        initMobileSideCamMonitor: function() {
+            var self = this;
+            if (!self.config || !self.config.mobile_status_url) return;
+
+            self.mobileSideCamConnected = false;
+            self.mobileSideCamWasPaired = false;
+
+            setInterval(function() {
+                if (window.isSubmitting) return;
+                fetch(self.config.mobile_status_url)
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        var isConn = Boolean(data && data.connected);
+                        self.mobileSideCamConnected = isConn;
+                        if (isConn) {
+                            self.mobileSideCamWasPaired = true;
+                        }
+
+                        var preflightBadge = document.getElementById('nf-dualcam-badge');
+                        if (preflightBadge) {
+                            if (isConn) {
+                                preflightBadge.innerText = 'Connected (Live)';
+                                preflightBadge.style.background = '#dcfce7';
+                                preflightBadge.style.color = '#166534';
+                                preflightBadge.style.borderColor = '#86efac';
+                            } else {
+                                preflightBadge.innerText = 'Not Paired';
+                                preflightBadge.style.background = '#fef3c7';
+                                preflightBadge.style.color = '#92400e';
+                                preflightBadge.style.borderColor = '#fde68a';
+                            }
+                        }
+
+                        var hudDualBadge = document.getElementById('netrago-hud-dualcam-badge');
+                        if (hudDualBadge) {
+                            if (isConn) {
+                                hudDualBadge.innerText = 'Side-Cam: LIVE';
+                                hudDualBadge.style.color = '#4ade80';
+                            } else if (self.mobileSideCamWasPaired) {
+                                hudDualBadge.innerText = 'Side-Cam: LOST';
+                                hudDualBadge.style.color = '#ef4444';
+                            } else {
+                                hudDualBadge.innerText = 'Single Cam';
+                                hudDualBadge.style.color = '#94a3b8';
+                            }
+                        }
+
+                        // If phone was paired and disconnects during exam, trigger violation
+                        if (self.proctoringStarted && self.mobileSideCamWasPaired && !isConn && data.age > 25) {
+                            if (!self.sideCamLostLogged) {
+                                self.sideCamLostLogged = true;
+                                self.playAlertChime(true);
+                                self.handleViolation('Mobile side-camera disconnected during exam.');
+                                setTimeout(function() { self.sideCamLostLogged = false; }, 30000);
+                            }
+                        }
+                    })
+                    .catch(function() {});
+            }, 5000);
         },
 
         blockKeyboardShortcuts: function() {
@@ -560,7 +848,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                         return;
                     }
 
-                    self.handleViolation('Focus lost (clicked outside quiz tab).');
+                    self.playAlertChime(true);
+                    self.handleViolation('Focus lost (clicked outside exam window).');
                     setTimeout(function() {
                         if (self.config.requirecamera == 1 && self.videoElement) {
                             self.takeSnapshot('focus_loss_snapshot');
@@ -568,8 +857,29 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                         if (self.config.requirescreencapture == 1 && self.screenVideoElement) {
                             self.takeScreenSnapshot('focus_loss_snapshot');
                         }
-                    }, 1000);
-                }, 500);
+                    }, 800);
+                }, 400);
+            });
+
+            // Cursor leaving browser viewport detection
+            document.documentElement.addEventListener('mouseleave', function() {
+                if (!self.proctoringStarted || window.isSubmitting) return;
+                var hudPill = document.getElementById('netrago-hud-warning-pill');
+                if (hudPill) {
+                    hudPill.innerText = 'Cursor Outside Window';
+                    hudPill.style.color = '#f59e0b';
+                    hudPill.style.borderColor = '#f59e0b';
+                }
+            });
+
+            document.documentElement.addEventListener('mouseenter', function() {
+                if (!self.proctoringStarted) return;
+                var hudPill = document.getElementById('netrago-hud-warning-pill');
+                if (hudPill && hudPill.innerText === 'Cursor Outside Window') {
+                    hudPill.innerText = 'Face Verified';
+                    hudPill.style.color = '#22c55e';
+                    hudPill.style.borderColor = '#22c55e';
+                }
             });
         },
 
@@ -597,54 +907,86 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             }
 
             var createFSOVerlay = function() {
-                var banner = document.getElementById('netrago-fs-banner');
-                if (!banner) {
-                    banner = document.createElement('div');
-                    banner.id = 'netrago-fs-banner';
-                    banner.style.cssText = 'position:fixed; top:0; left:0; width:100vw; background:#dc3545; color:white; z-index:9999999; text-align:center; padding:10px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2);';
-                    banner.innerHTML = '<i class="fa fa-expand mr-2"></i> Fullscreen exited. Click HERE to resume fullscreen mode and continue the activity.';
-                    document.body.appendChild(banner);
+                if (!self.proctoringStarted) return;
+
+                var curtain = document.getElementById('netrago-fullscreen-lockout');
+                if (!curtain) {
+                    curtain = document.createElement('div');
+                    curtain.id = 'netrago-fullscreen-lockout';
+                    curtain.style.cssText = 'position:fixed; inset:0; width:100vw; height:100vh; background:rgba(15, 23, 42, 0.96); z-index:2147483647; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; text-align:center; padding:24px; box-sizing:border-box; backdrop-filter:blur(10px); font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;';
+                    curtain.innerHTML = 
+                        '<div style="background:#1e293b; border:1px solid #334155; border-radius:16px; padding:36px; max-width:520px; width:100%; box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.5);">' +
+                            '<div style="width:68px; height:68px; border-radius:50%; background:rgba(239, 68, 68, 0.15); display:inline-flex; align-items:center; justify-content:center; margin-bottom:18px; color:#ef4444; font-size:28px;">' +
+                                '<i class="fa fa-expand"></i>' +
+                            '</div>' +
+                            '<h2 style="font-size:22px; font-weight:700; margin:0 0 10px 0; color:#f8fafc;">EXAM LOCKED: Fullscreen Mode Exited</h2>' +
+                            '<p style="font-size:14px; color:#94a3b8; line-height:1.6; margin:0 0 20px 0;">' +
+                                'You have exited fullscreen mode. Exiting fullscreen during this proctored examination is strictly prohibited and has been recorded as a violation.' +
+                            '</p>' +
+                            '<div style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); border-radius:8px; padding:10px 14px; margin-bottom:24px; font-size:13px; color:#fca5a5; font-weight:600;">' +
+                                '<i class="fa fa-exclamation-circle" style="margin-right:6px;"></i> Recorded Strikes: <span id="netrago-lockout-strikes">' + self.strikes + '</span>' + (self.config.maxstrikes > 0 ? (' / ' + self.config.maxstrikes) : '') +
+                            '</div>' +
+                            '<button id="netrago-btn-resume-fs" style="background:#2563eb; color:white; border:none; padding:14px 24px; font-size:15px; font-weight:600; border-radius:8px; cursor:pointer; width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 12px rgba(37, 99, 235, 0.4);">' +
+                                '<i class="fa fa-expand"></i> Re-enter Fullscreen &amp; Resume Exam' +
+                            '</button>' +
+                        '</div>';
+                    document.body.appendChild(curtain);
+
+                    var resumeBtn = document.getElementById('netrago-btn-resume-fs');
+                    if (resumeBtn) {
+                        resumeBtn.onclick = function() {
+                            self.requestFullscreenDirect();
+                            removeFSOVerlay();
+                        };
+                    }
+                } else {
+                    curtain.style.display = 'flex';
+                    var lockoutStrikes = document.getElementById('netrago-lockout-strikes');
+                    if (lockoutStrikes) {
+                        lockoutStrikes.innerText = self.strikes;
+                    }
                 }
 
-                var resumeFS = function() {
-                    var docElm = document.documentElement;
-                    try {
-                        if (docElm.requestFullscreen) docElm.requestFullscreen();
-                        else if (docElm.mozRequestFullScreen) docElm.mozRequestFullScreen();
-                        else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
-                        else if (docElm.msRequestFullscreen) docElm.msRequestFullscreen();
-                    } catch (e) {}
-                };
-                
-                banner.addEventListener('click', resumeFS);
+                // Blur and disable pointer events on the quiz frame while locked out
+                var frame = document.getElementById('netrago-quiz-frame');
+                if (frame) {
+                    frame.style.filter = 'blur(8px)';
+                    frame.style.pointerEvents = 'none';
+                }
             };
 
             var removeFSOVerlay = function() {
-                var banner = document.getElementById('netrago-fs-banner');
-                if (banner) banner.remove();
+                var curtain = document.getElementById('netrago-fullscreen-lockout');
+                if (curtain) {
+                    curtain.style.display = 'none';
+                }
+                var frame = document.getElementById('netrago-quiz-frame');
+                if (frame) {
+                    frame.style.filter = 'none';
+                    frame.style.pointerEvents = 'auto';
+                    frame.focus();
+                }
             };
 
             var checkFullscreen = function() {
                 var isFS = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
                 if (!isFS) {
                     if (window.isSubmitting) return; // Allow exit during submit
-                    self.handleViolation('Fullscreen exit detected.');
-                    if (self.config.requirecamera == 1 && self.videoElement) {
-                        self.takeSnapshot('fullscreen_exit_snapshot');
+                    if (self.proctoringStarted) {
+                        self.playAlertChime(true);
+                        self.handleViolation('Fullscreen exit detected.');
+                        if (self.config.requirecamera == 1 && self.videoElement) {
+                            self.takeSnapshot('fullscreen_exit_snapshot');
+                        }
+                        if (self.config.requirescreencapture == 1 && self.screenVideoElement) {
+                            self.takeScreenSnapshot('fullscreen_exit_snapshot');
+                        }
+                        createFSOVerlay();
                     }
-                    if (self.config.requirescreencapture == 1 && self.screenVideoElement) {
-                        self.takeScreenSnapshot('fullscreen_exit_snapshot');
-                    }
-                    createFSOVerlay();
                 } else {
                     removeFSOVerlay();
                 }
             };
-
-            var isInitFS = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-            if (!isInitFS) {
-                createFSOVerlay();
-            }
 
             document.addEventListener('fullscreenchange', checkFullscreen);
             document.addEventListener('webkitfullscreenchange', checkFullscreen);
@@ -658,8 +1000,16 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 if (!self.proctoringStarted) return;
                 if (document.visibilityState === 'hidden') {
                     if (window.isSubmitting) return; // Allow exit during submit
+                    self.playAlertChime(true);
                     self.handleViolation('Tab switching or application backgrounding detected.');
                     
+                    var hudPill = document.getElementById('netrago-hud-warning-pill');
+                    if (hudPill) {
+                        hudPill.innerText = 'Tab Switch Detected';
+                        hudPill.style.color = '#ef4444';
+                        hudPill.style.borderColor = '#ef4444';
+                    }
+
                     // Delay screenshot by 1s to allow video stream to catch up to the new tab
                     setTimeout(function() {
                         if (self.config.requirecamera == 1 && self.videoElement) {
@@ -717,6 +1067,14 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                     }
                     var average = sum / dataArray.length;
                     
+                    // Update HUD VU-meter bar
+                    var vuBar = document.getElementById('netrago-hud-vu-bar');
+                    if (vuBar) {
+                        var pct = Math.min(100, Math.round((average / 60) * 100));
+                        vuBar.style.width = Math.max(10, pct) + '%';
+                        vuBar.style.background = average > 40 ? '#ef4444' : '#22c55e';
+                    }
+
                     // Decibel threshold heuristic (average > 40 is fairly loud talking/noise)
                     if (average > 40) {
                         noiseFrames++;
@@ -742,31 +1100,96 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
         verifyFaceLoop: async function() {
             if (!this.videoElement || !this.stream || !this.modelsLoaded) return;
 
+            var hudCanvas = document.getElementById('netrago-hud-canvas');
+            var hudPill = document.getElementById('netrago-hud-warning-pill');
+            var hudDot = document.getElementById('netrago-hud-dot');
+            var hudTitle = document.getElementById('netrago-hud-title');
+
             var canvas = document.createElement('canvas');
-            canvas.width = this.videoElement.videoWidth;
-            canvas.height = this.videoElement.videoHeight;
+            canvas.width = this.videoElement.videoWidth || 320;
+            canvas.height = this.videoElement.videoHeight || 240;
             canvas.getContext('2d', { willReadFrequently: true }).drawImage(this.videoElement, 0, 0);
 
             var detections = await faceapi.detectAllFaces(canvas).withFaceLandmarks().withFaceDescriptors();
             
+            var drawHudBox = function(box, color, label) {
+                if (!hudCanvas) return;
+                var ctx = hudCanvas.getContext('2d');
+                ctx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
+                if (!box) return;
+
+                var scaleX = hudCanvas.width / (canvas.width || 320);
+                var scaleY = hudCanvas.height / (canvas.height || 240);
+                // Video is mirrored via scaleX(-1), so mirror X coordinate
+                var x = (canvas.width - (box.x + box.width)) * scaleX;
+                var y = box.y * scaleY;
+                var w = box.width * scaleX;
+                var h = box.height * scaleY;
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                if (ctx.roundRect) {
+                    ctx.roundRect(x, y, w, h, 6);
+                } else {
+                    ctx.rect(x, y, w, h);
+                }
+                ctx.stroke();
+
+                if (label) {
+                    ctx.fillStyle = color;
+                    ctx.font = 'bold 9px sans-serif';
+                    ctx.fillText(label, x + 4, y > 15 ? y - 4 : y + 12);
+                }
+            };
+
+            var setHudStatus = function(state, text, pillColor, dotColor) {
+                if (hudPill) {
+                    hudPill.innerText = text;
+                    hudPill.style.color = pillColor;
+                    hudPill.style.borderColor = pillColor;
+                }
+                if (hudDot) {
+                    hudDot.style.background = dotColor;
+                    hudDot.style.boxShadow = '0 0 8px ' + dotColor;
+                }
+                if (hudTitle) {
+                    hudTitle.innerText = state;
+                }
+            };
+
             if (detections.length === 0) {
+                drawHudBox(null);
+                setHudStatus('ALERT: NO FACE', 'No Face Detected', '#ef4444', '#ef4444');
+                this.playAlertChime(true);
                 this.handleViolation('Face not found in camera frame.');
                 return;
             }
             if (detections.length > 1) {
+                drawHudBox(detections[0].detection.box, '#ef4444', 'Multiple Faces');
+                setHudStatus('ALERT: MULTI FACE', 'Multiple Faces Detected', '#ef4444', '#ef4444');
+                this.playAlertChime(true);
                 this.handleViolation('Multiple faces detected in camera frame.');
                 return;
             }
 
-            // Exactly 1 face, let's compare
-            var distance = faceapi.euclideanDistance(detections[0].descriptor, this.baselineDescriptor);
-            if (distance > 0.60) {
-                this.handleViolation('Unrecognized face detected. Does not match KYC identity.');
-                return; // Stop further checks if identity is wrong
+            var face = detections[0];
+            var box = face.detection.box;
+
+            // Compare face descriptor against KYC baseline if available
+            if (this.baselineDescriptor) {
+                var distance = faceapi.euclideanDistance(face.descriptor, this.baselineDescriptor);
+                if (distance > 0.60) {
+                    drawHudBox(box, '#ef4444', 'Mismatch');
+                    setHudStatus('ALERT: MISMATCH', 'Unrecognized Face', '#ef4444', '#ef4444');
+                    this.playAlertChime(true);
+                    this.handleViolation('Unrecognized face detected. Does not match KYC identity.');
+                    return; // Stop further checks if identity is wrong
+                }
             }
             
             // Gaze & Head Pose Tracking Heuristics
-            var landmarks = detections[0].landmarks;
+            var landmarks = face.landmarks;
             if (landmarks) {
                 var jaw = landmarks.getJawOutline();
                 var nose = landmarks.getNose();
@@ -783,6 +1206,9 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 var yawRatio = distLeft / distRight;
                 
                 if (yawRatio < 0.4 || yawRatio > 2.5) {
+                    drawHudBox(box, '#f59e0b', 'Looking Away');
+                    setHudStatus('WARNING: GAZE', 'Looking Away', '#f59e0b', '#f59e0b');
+                    this.playAlertChime(false);
                     this.handleViolation('Suspicious Gaze: Looking far to the side.');
                     return;
                 }
@@ -793,10 +1219,17 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
                 var pitchRatio = distNoseToChin / distBridgeToNose;
                 
                 if (pitchRatio < 0.7) {
+                    drawHudBox(box, '#f59e0b', 'Looking Down');
+                    setHudStatus('WARNING: GAZE', 'Looking Down', '#f59e0b', '#f59e0b');
+                    this.playAlertChime(false);
                     this.handleViolation('Suspicious Gaze: Looking down (possibly at a phone).');
                     return;
                 }
             }
+
+            // Face verified and centered
+            drawHudBox(box, '#22c55e', 'Verified');
+            setHudStatus('AI PROCTOR ACTIVE', 'Face Verified', '#22c55e', '#22c55e');
         },
 
         handleViolation: function(reason) {
@@ -809,6 +1242,18 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             this.lastViolationTime = now;
             
             this.strikes++;
+
+            // Update HUD & Lockout strike badges
+            var strikesBadge = document.getElementById('netrago-hud-strikes-badge');
+            if (strikesBadge) {
+                strikesBadge.innerText = 'Strikes: ' + this.strikes + (this.config.maxstrikes > 0 ? ('/' + this.config.maxstrikes) : '');
+                strikesBadge.style.background = 'rgba(239, 68, 68, 0.4)';
+                strikesBadge.style.color = '#fff';
+            }
+            var lockoutStrikes = document.getElementById('netrago-lockout-strikes');
+            if (lockoutStrikes) {
+                lockoutStrikes.innerText = this.strikes;
+            }
             
             var reasonCode = 'violation_' + this.strikes;
             if (reason.indexOf('Tab switching') !== -1 || reason.indexOf('quiz tab') !== -1) reasonCode = 'tab_switch_violation_' + this.strikes;
@@ -820,6 +1265,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, ajax, notificat
             else if (reason.indexOf('Face not found') !== -1) reasonCode = 'face_not_found_violation_' + this.strikes;
             else if (reason.indexOf('Unrecognized face') !== -1) reasonCode = 'unrecognized_face_violation_' + this.strikes;
             else if (reason.indexOf('Multiple faces') !== -1) reasonCode = 'multiple_faces_violation_' + this.strikes;
+            else if (reason.indexOf('Prohibited object') !== -1) reasonCode = 'prohibited_object_violation_' + this.strikes;
+            else if (reason.indexOf('side-camera') !== -1) reasonCode = 'side_cam_disconnected_' + this.strikes;
             
             this.takeSnapshot(reasonCode);
             this.takeScreenSnapshot('screen_' + reasonCode);

@@ -83,4 +83,41 @@ if ($hassiteconfig) {
         'Block F12, Ctrl+P, and other developer shortcuts.',
         1
     ));
+
+    $settings->add(new admin_setting_configcheckbox(
+        'local_netrago/allow_tabswitch',
+        'Enable Tab Switching Detection',
+        'Detect and log when a student switches browser tabs or minimizes the exam window.',
+        1
+    ));
+
+    $settings->add(new admin_setting_configcheckbox(
+        'local_netrago/allow_object_detection',
+        'Enable AI Object Detection (Phone, Book, Laptop)',
+        'Use in-browser AI to detect prohibited items (smartphones, books, secondary laptops) in the webcam frame.',
+        1
+    ));
+
+    $settings->add(new admin_setting_configcheckbox(
+        'local_netrago/allow_dualcam',
+        'Enable Dual-Camera Side-Angle QR Pairing',
+        'Show a QR code during pre-flight setup allowing students to pair a smartphone as a 45-degree side-angle proctoring camera.',
+        1
+    ));
+
+    $settings->add(new admin_setting_configselect(
+        'local_netrago/default_maxstrikes',
+        'Default Maximum Violations (Auto-Termination)',
+        'Default violation limit before an attempt is automatically submitted. Choose "No Limit (Log Only)" to disable automatic termination.',
+        3,
+        [
+            0  => 'No Limit (Disabled - Log Violations Only)',
+            1  => '1 Violation',
+            2  => '2 Violations',
+            3  => '3 Violations (Recommended)',
+            5  => '5 Violations',
+            10 => '10 Violations',
+            15 => '15 Violations',
+        ]
+    ));
 }

@@ -160,6 +160,23 @@
                 <video id="nf-preview-screen" autoplay muted playsinline style="width: 48%; border-radius: 4px; border: 1px solid #ccc; background: #000; height: 120px; object-fit: cover;"></video>
                 <video id="nf-preview-camera" autoplay muted playsinline style="width: 48%; border-radius: 4px; border: 1px solid #ccc; background: #000; height: 120px; object-fit: cover;"></video>
             </div>
+            {{#allow_dualcam}}
+            <!-- Dual-Camera Side-Angle QR Pairing -->
+            <div id="nf-dualcam-box" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:14px; margin-bottom:16px; display:flex; align-items:center; gap:14px; text-align:left;">
+                <img src="{{mobile_qr_url}}" alt="Side-Camera QR Code" style="width:96px; height:96px; border-radius:6px; border:1px solid #e2e8f0; background:white; flex-shrink:0;" />
+                <div style="flex:1;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                        <strong style="font-size:13px; color:#1e293b;"><i class="fa fa-mobile"></i> Dual-Camera Side Proctor</strong>
+                        <span id="nf-dualcam-badge" style="font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px; background:#fef3c7; color:#92400e; border:1px solid #fde68a;">Not Paired</span>
+                    </div>
+                    <p style="font-size:12px; color:#475569; margin:0 0 6px 0; line-height:1.4;">
+                        Scan this QR code with your smartphone and place it at a <strong>45° side angle</strong> showing your hands, desk, and laptop screen.
+                    </p>
+                    <a href="{{mobile_cam_url}}" target="_blank" style="font-size:11px; color:#2563eb; text-decoration:underline;">Open Pairing Link</a>
+                </div>
+            </div>
+            {{/allow_dualcam}}
+
             <p>Please review the proctoring agreement below.</p>
             <div class="netrago-checkbox-group">
                 <input type="checkbox" id="nf-consent-checkbox">
@@ -167,7 +184,7 @@
                     I provide consent to record, process and store the proctoring data, including screenshots of my screen and photos of myself, and share them with my teacher.
                 </label>
             </div>
-            <button type="button" id="nf-btn-start-attempt" class="netrago-btn" disabled style="position:relative; z-index:999999; pointer-events:auto;" onclick="if(this.disabled) return; document.getElementById('nf-step-3').style.display='none'; document.getElementById('nf-step-warning').style.display='block'; if(window.netragoProctorInstance) window.netragoProctorInstance.startProctoringAndUnlock();">Start attempt</button>
+            <button type="button" id="nf-btn-start-attempt" class="netrago-btn" disabled style="position:relative; z-index:999999; pointer-events:auto;" onclick="if(this.disabled) return; if(window.netragoProctorInstance && window.netragoProctorInstance.config && window.netragoProctorInstance.config.requirefullscreen == 1) window.netragoProctorInstance.requestFullscreenDirect(); document.getElementById('nf-step-3').style.display='none'; document.getElementById('nf-step-warning').style.display='block'; if(window.netragoProctorInstance) window.netragoProctorInstance.startProctoringAndUnlock();">Start attempt</button>
         </div>
 
         <!-- Warning Step (Shown briefly before attempt starts) -->

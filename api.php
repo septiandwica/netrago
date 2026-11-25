@@ -344,3 +344,4 @@ try {
         'error'   => 'Internal error: ' . $e->getMessage()
     ]);
 }
+

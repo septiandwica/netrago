@@ -72,10 +72,24 @@ function local_netrago_coursemodule_standard_elements($formwrapper, $mform) {
         $mform->setDefault('netrago_disabledevtools', 0);
     }
 
-    $mform->addElement('text', 'netrago_maxstrikes', get_string('maxstrikes', 'local_netrago'), ['size' => 4]);
+    $default_maxstrikes = get_config('local_netrago', 'default_maxstrikes');
+    if ($default_maxstrikes === false || $default_maxstrikes === null) {
+        $default_maxstrikes = 3;
+    }
+
+    $strike_options = [
+        0  => 'No Limit (Disabled - Log Violations Only)',
+        1  => '1 Violation',
+        2  => '2 Violations',
+        3  => '3 Violations',
+        5  => '5 Violations',
+        10 => '10 Violations',
+        15 => '15 Violations',
+    ];
+    $mform->addElement('select', 'netrago_maxstrikes', get_string('maxstrikes', 'local_netrago'), $strike_options);
     $mform->setType('netrago_maxstrikes', PARAM_INT);
     $mform->addHelpButton('netrago_maxstrikes', 'maxstrikes', 'local_netrago');
-    $mform->setDefault('netrago_maxstrikes', 3);
+    $mform->setDefault('netrago_maxstrikes', (int)$default_maxstrikes);
 
     // If editing an existing module, load the current settings.
     $cm = $formwrapper->get_coursemodule();

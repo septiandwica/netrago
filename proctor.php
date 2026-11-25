@@ -82,6 +82,12 @@ $is_seb = (!empty($_SERVER['HTTP_X_SAFEEXAMBROWSER_CONFIGKEYHASH']) ||
            (isset($_SERVER['HTTP_USER_AGENT']) && stripos($_SERVER['HTTP_USER_AGENT'], 'SafeExamBrowser') !== false) ||
            optional_param('seb', 0, PARAM_INT) == 1);
 
+$cfg_tabswitch = get_config('local_netrago', 'allow_tabswitch');
+$cfg_objdetect = get_config('local_netrago', 'allow_object_detection');
+$cfg_dualcam   = get_config('local_netrago', 'allow_dualcam');
+$default_maxstrikes = get_config('local_netrago', 'default_maxstrikes');
+$fallback_maxstrikes = ($default_maxstrikes !== false && $default_maxstrikes !== null) ? (int)$default_maxstrikes : 3;
+
 $config = [
     'cmid' => $cmid,
     'courseid' => (int)$cm->course,
@@ -95,12 +101,36 @@ $config = [
     'disablecopypaste' => get_config('local_netrago', 'allow_copypaste') ? ($settings->disablecopypaste ?? 0) : 0,
     'allow_focusloss' => get_config('local_netrago', 'allow_focusloss') ? ($settings->disablefocusloss ?? 0) : 0,
     'allow_devtools' => get_config('local_netrago', 'allow_devtools') ? ($settings->disabledevtools ?? 0) : 0,
-    'maxstrikes' => isset($settings->maxstrikes) ? $settings->maxstrikes : 3,
+    'allow_tabswitch' => ($cfg_tabswitch === false) ? 1 : (int)$cfg_tabswitch,
+    'allow_object_detection' => ($cfg_objdetect === false) ? 1 : (int)$cfg_objdetect,
+    'allow_dualcam' => ($cfg_dualcam === false) ? 1 : (int)$cfg_dualcam,
+    'maxstrikes' => isset($settings->maxstrikes) ? (int)$settings->maxstrikes : $fallback_maxstrikes,
     'ajaxurl' => (new moodle_url('/local/netrago/ajax.php'))->out(false),
     'descriptor' => $descriptor_to_use,
     'attempt_url' => $url,
     'requirekyc' => isset($settings->requirekyc) ? $settings->requirekyc : 1
 ];
+
+// Generate Dual-Camera Mobile Pairing URLs
+$pair_exp = time() + 14400; // 4 hours validity
+$pair_secret = !empty($CFG->passwordsaltmain) ? $CFG->passwordsaltmain : 'netrago_dualcam_secret_2026';
+$pair_sig = hash_hmac('sha256', $cmid . ':' . $USER->id . ':' . $pair_exp, $pair_secret);
+$mobile_cam_url = (new moodle_url('/local/netrago/mobile_cam.php', [
+    'cmid' => $cmid,
+    'uid'  => $USER->id,
+    'exp'  => $pair_exp,
+    'sig'  => $pair_sig,
+]))->out(false);
+$mobile_status_url = (new moodle_url('/local/netrago/ajax_mobile.php', [
+    'action' => 'status',
+    'cmid'   => $cmid,
+    'uid'    => $USER->id,
+    'exp'    => $pair_exp,
+    'sig'    => $pair_sig,
+]))->out(false);
+
+$config['mobile_cam_url'] = $mobile_cam_url;
+$config['mobile_status_url'] = $mobile_status_url;
 
 $requirekyc = isset($settings->requirekyc) ? $settings->requirekyc : 1;
 $requires_password = false;
@@ -123,7 +153,10 @@ $context_data = [
     'disablecopypaste' => $config['disablecopypaste'],
     'disablefocusloss' => $config['allow_focusloss'],
     'disabledevtools' => $config['allow_devtools'],
-    'maxstrikes' => $config['maxstrikes']
+    'allow_dualcam' => $config['allow_dualcam'],
+    'maxstrikes' => $config['maxstrikes'],
+    'mobile_cam_url' => $mobile_cam_url,
+    'mobile_qr_url' => 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode($mobile_cam_url),
 ];
 
 // Generate a hidden form containing all original POST variables
